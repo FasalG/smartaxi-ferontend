@@ -1,0 +1,501 @@
+@import './styles/index.scss';
+
+/* Premium Angular Material Overrides */
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: 24px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: none !important;
+  background: var(--card) !important;
+  color: var(--card-foreground) !important;
+  overflow: hidden;
+}
+
+/* Global Form Field Enhancements */
+.mat-mdc-form-field {
+  width: 100%;
+  margin-bottom: 12px;
+  --mdc-outlined-text-field-container-shape: 14px;
+  --mat-form-field-container-height: 58px;
+
+  /* Hide the default Material notched outline to use our custom wrapper border */
+  .mdc-notched-outline {
+    display: none !important;
+  }
+}
+
+.mat-mdc-text-field-wrapper {
+  background-color: var(--card) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: 14px !important;
+  padding: 0 16px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  &:hover {
+    border-color: var(--ring) !important;
+    background-color: var(--muted) !important;
+  }
+}
+
+.mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
+  background-color: var(--card) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Rounded inputs for better aesthetics */
+.mat-mdc-input-element {
+  font-size: var(--text-base, 0.95rem) !important;
+  font-weight: var(--font-weight-medium, 500) !important;
+  color: var(--foreground) !important;
+  letter-spacing: -0.01em;
+}
+
+/* Fix for centered dialogs in overlay */
+.cdk-global-overlay-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cdk-overlay-connected-position-bounding-box {
+  position: absolute;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  min-width: 1px;
+  min-height: 1px;
+}
+
+.cdk-overlay-pane {
+  max-width: 95vw !important;
+  /* Removed position: relative !important because it breaks CDK connected overlays like datepicker popup! */
+
+  .mat-mdc-select-panel {
+    background: white;
+    border-radius: 12px;
+  }
+}
+
+/* Fix Datepicker Background Globally */
+.mat-datepicker-content,
+.mat-calendar,
+.mat-datepicker-content-container {
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.bg-white-datepicker {
+  background-color: #ffffff !important;
+}
+
+/* Button & Action Styling */
+.mat-mdc-dialog-actions {
+  padding: 24px 32px !important;
+  background-color: var(--muted);
+  border-top: 1px solid var(--border) !important;
+  gap: 16px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+  border: none !important;
+  padding: 14px 32px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  color: white !important;
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4) !important;
+}
+
+.btn-light {
+  background-color: #ffffff !important;
+  border: 1.5px solid #e2e8f0 !important;
+  padding: 14px 32px !important;
+  border-radius: 16px !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-light:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Label & Typography Styling */
+.form-label {
+  display: block;
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  /* Slate-500 */
+  margin-bottom: 8px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Premium Snackbar Styles */
+.mat-mdc-snack-bar-container {
+  .mdc-snackbar__surface {
+    background-color: var(--card, #ffffff) !important;
+    color: var(--foreground, #000000) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  .mdc-snackbar__label {
+    color: inherit !important;
+    font-weight: 500;
+  }
+
+  .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--primary, #4f46e5) !important;
+    font-weight: 700;
+  }
+
+  /* Success Snackbar */
+  &.success-snackbar {
+    .mdc-snackbar__surface {
+      background-color: #22c55e !important;
+      color: white !important;
+    }
+
+    .mdc-snackbar__label {
+      color: white !important;
+    }
+
+    .mat-mdc-button.mat-mdc-snack-bar-action {
+      color: white !important;
+      opacity: 0.9;
+    }
+  }
+
+  /* Error Snackbar */
+  &.error-snackbar,
+  &.bg-danger {
+    .mdc-snackbar__surface {
+      background-color: #ef4444 !important;
+      color: white !important;
+    }
+
+    .mdc-snackbar__label {
+      color: white !important;
+    }
+
+    .mat-mdc-button.mat-mdc-snack-bar-action {
+      color: white !important;
+      opacity: 0.9;
+    }
+  }
+
+  /* Warning Snackbar */
+  &.bg-warning {
+    .mdc-snackbar__surface {
+      background-color: #f59e0b !important;
+      color: white !important;
+    }
+
+    .mdc-snackbar__label {
+      color: white !important;
+    }
+
+    .mat-mdc-button.mat-mdc-snack-bar-action {
+      color: white !important;
+      opacity: 0.9;
+    }
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+  background-clip: content-box;
+}
+
+.transition-all {
+  transition: all 0.2s ease;
+}
+
+/* Global Variable Synchronization & Responsive Theming */
+body {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Desktop Density Reductions */
+@media (min-width: 769px) {
+  body {
+    font-size: 0.875rem !important;
+  }
+
+  .card-body {
+    padding: 1.25rem !important;
+  }
+
+  .p-4 {
+    padding: 1.25rem !important;
+  }
+
+  .p-5 {
+    padding: 1.5rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 1.25rem !important;
+  }
+
+  .gap-4 {
+    gap: 1.25rem !important;
+  }
+
+  .btn {
+    padding: 10px 20px !important;
+    font-size: 0.875rem !important;
+  }
+
+  h1,
+  .h1 {
+    font-size: 1.75rem !important;
+  }
+
+  h2,
+  .h2 {
+    font-size: 1.5rem !important;
+  }
+
+  h3,
+  .h3 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Mat-Table Overrides */
+.mat-mdc-table {
+  background: transparent !important;
+}
+
+.mat-mdc-header-cell {
+  color: var(--muted-foreground) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 12px 16px !important;
+}
+
+.mat-mdc-cell {
+  color: var(--foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-size: 0.875rem !important;
+  padding: 12px 16px !important;
+}
+
+.mat-mdc-paginator {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+
+.card {
+  background-color: var(--card) !important;
+  color: var(--card-foreground) !important;
+  border-radius: var(--radius-lg, 16px) !important;
+}
+
+.bg-light {
+  background-color: var(--muted) !important;
+}
+
+.bg-white {
+  background-color: var(--card) !important;
+}
+
+.text-dark {
+  color: var(--foreground) !important;
+}
+
+.text-secondary {
+  color: var(--muted-foreground) !important;
+}
+
+.border-secondary {
+  border-color: var(--border) !important;
+}
+
+/* Responsive Overrides for Mobile */
+@media (max-width: 768px) {
+
+  /* Global Container Adjustments */
+  .container-fluid {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Typography Scale Down */
+  h2,
+  .h2 {
+    font-size: 1.5rem !important;
+  }
+
+  h3,
+  .h3 {
+    font-size: 1.25rem !important;
+  }
+
+  h4,
+  .h4 {
+    font-size: 1.125rem !important;
+  }
+
+  p,
+  .small,
+  th,
+  td {
+    font-size: 0.85rem !important;
+  }
+
+  .form-label {
+    font-size: 0.75rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Spacing Reductions (Override Bootstrap 5 Utilities) */
+  .p-4 {
+    padding: 1rem !important;
+  }
+
+  /* from 1.5rem */
+  .p-3 {
+    padding: 0.75rem !important;
+  }
+
+  /* from 1rem */
+  .py-4 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .py-3 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .px-4 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .gap-2 {
+    gap: 0.25rem !important;
+  }
+
+  .gap-3 {
+    gap: 0.5rem !important;
+  }
+
+  .gap-4 {
+    gap: 1rem !important;
+  }
+
+  /* Element Scale Down */
+  .card {
+    border-radius: 12px !important;
+    /* Reduced from 16px */
+  }
+
+  /* Button Density */
+  .btn {
+    padding: 10px 16px !important;
+    /* Reduced from 14px 32px */
+    font-size: 0.875rem !important;
+    border-radius: 12px !important;
+    /* Reduced from 16px */
+  }
+
+  .btn-sm {
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Table Density */
+  .table th,
+  .table td {
+    padding: 0.5rem 0.75rem !important;
+    /* Reduce table padding */
+    white-space: nowrap;
+    /* Prevent ugly wrapping on small screens */
+  }
+
+  /* Ensure popups maximize screen real estate on mobile */
+  .cdk-overlay-pane {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    border-radius: 16px !important;
+  }
+
+  /* Make tables responsive implicitly */
+  .table-responsive {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 12px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure padding inside dialogs is comfortable */
+  .mat-mdc-dialog-content {
+    padding: 16px !important;
+  }
+
+  .mat-mdc-dialog-actions {
+    flex-direction: column;
+    padding: 16px !important;
+  }
+
+  .mat-mdc-dialog-actions button {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-bottom: 8px;
+  }
+}
