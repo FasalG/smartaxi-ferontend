@@ -39,6 +39,8 @@ export class AuthService {
             body: credentials
         }).pipe(
             tap(response => {
+                console.log(response,'response')
+             
                 this.setSession(response);
             }),
             catchError(error => {

@@ -1,0 +1,123 @@
+<div class="container-fluid py-4 px-md-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">Vehicle Fleet</h2>
+            <p class="text-secondary">Manage your company's taxi fleet and availability status.</p>
+        </div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
+            *ngIf="!isCreating">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Add Vehicle
+        </button>
+        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
+            *ngIf="isCreating">
+            Cancel
+        </button>
+    </div>
+
+    <!-- Vehicles List view -->
+    <div *ngIf="!isCreating" class="mt-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <h5 class="mb-0 fw-bold">Active Fleet</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="px-4 py-3 small text-secondary fw-bold text-uppercase">Vehicle</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">License Plate</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Year/Color</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Status</th>
+                                <th class="text-end px-4 py-3 small text-secondary fw-bold text-uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let vehicle of vehicles()">
+                                <td class="px-4 fw-bold">{{ vehicle.make }} {{ vehicle.model }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ vehicle.licensePlate }}</span></td>
+                                <td>{{ vehicle.year }} / {{ vehicle.color }}</td>
+                                <td>
+                                    <span class="badge rounded-pill"
+                                        [ngClass]="{'bg-success': vehicle.status === 'active', 'bg-warning': vehicle.status === 'maintenance', 'bg-danger': vehicle.status === 'inactive'}">
+                                        {{ vehicle.status }}
+                                    </span>
+                                </td>
+                                <td class="text-end px-4">
+                                    <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="vehicles().length === 0">
+                                <td colspan="5" class="text-center py-5 text-secondary">
+                                    <p class="mb-0">No vehicles added yet.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Vehicle Form -->
+    <div *ngIf="isCreating" class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+            <h5 class="mb-0 fw-bold">Add New Fleet Vehicle</h5>
+            <p class="text-secondary small mt-1">Provide vehicle details.</p>
+        </div>
+        <div class="card-body p-4">
+            <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Make</label>
+                        <input type="text" class="form-control" formControlName="make" placeholder="e.g. Toyota"
+                            [ngClass]="{'is-invalid': f['make'].touched && f['make'].errors}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Model</label>
+                        <input type="text" class="form-control" formControlName="model" placeholder="e.g. Camry"
+                            [ngClass]="{'is-invalid': f['model'].touched && f['model'].errors}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">License Plate</label>
+                        <input type="text" class="form-control" formControlName="licensePlate" placeholder="ABC-1234"
+                            [ngClass]="{'is-invalid': f['licensePlate'].touched && f['licensePlate'].errors}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Year</label>
+                        <input type="number" class="form-control" formControlName="year"
+                            [ngClass]="{'is-invalid': f['year'].touched && f['year'].errors}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Color</label>
+                        <input type="text" class="form-control" formControlName="color" placeholder="e.g. White"
+                            [ngClass]="{'is-invalid': f['color'].touched && f['color'].errors}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Initial Status</label>
+                        <select class="form-select" formControlName="status">
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary px-4" (click)="toggleCreateForm()"
+                        [disabled]="loading">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center gap-2"
+                        [disabled]="loading || vehicleForm.invalid">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"
+                            aria-hidden="true"></span>
+                        Register Vehicle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

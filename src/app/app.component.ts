@@ -45,7 +45,7 @@ import { AuthService } from './services/auth.service';
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-grow-1" [class.container-fluid]="showSidebar" [class.py-4]="showSidebar" [class.p-md-5]="showSidebar">
+        <div class="flex-grow-1" >
           <router-outlet></router-outlet>
         </div>
       </main>

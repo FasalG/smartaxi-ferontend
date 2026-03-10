@@ -6,10 +6,65 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-5 text-center text-secondary">
-            <h5>Admin features placeholder</h5>
-            <p>Isolated data view for this tenant's drivers and vehicles.</p>
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center p-4 transition-all hover-lift"
+                routerLink="/admin/vehicles" style="cursor: pointer;">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style="width: 60px; height: 60px;">
+                    <svg width="24" height="24" class="text-primary" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </div>
+                <h5 class="fw-bold">My Fleet</h5>
+                <p class="small text-secondary mb-0">Manage vehicles</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center p-4 transition-all hover-lift"
+                routerLink="/admin/trips" style="cursor: pointer;">
+                <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style="width: 60px; height: 60px;">
+                    <svg width="24" height="24" class="text-success" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                </div>
+                <h5 class="fw-bold">Daily Trips</h5>
+                <p class="small text-secondary mb-0">Dispatch & Track</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center p-4 transition-all hover-lift"
+                routerLink="/admin/maintenance" style="cursor: pointer;">
+                <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style="width: 60px; height: 60px;">
+                    <svg width="24" height="24" class="text-warning" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    </svg>
+                </div>
+                <h5 class="fw-bold">Maintenance</h5>
+                <p class="small text-secondary mb-0">Service Records</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center p-4 transition-all hover-lift"
+                routerLink="/admin/drivers" style="cursor: pointer;">
+                <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
+                    style="width: 60px; height: 60px;">
+                    <svg width="24" height="24" class="text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <h5 class="fw-bold">My Drivers</h5>
+                <p class="small text-secondary mb-0">Driver Accounts</p>
+            </div>
         </div>
     </div>
 </div>

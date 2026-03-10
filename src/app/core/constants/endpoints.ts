@@ -2,7 +2,9 @@ export const Endpoints = {
     AUTH: {
         LOGIN: '/auth/login',
         REGISTER: '/auth/register',
-        CURRENT_USER: '/auth/me'
+        CURRENT_USER: '/auth/me',
+        SETUP: '/auth/setup',
+        GET_ADMINS: '/auth/admins'
     },
     BOOKINGS: {
         BASE: '/bookings',

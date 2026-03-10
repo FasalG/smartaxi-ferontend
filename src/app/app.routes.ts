@@ -11,11 +11,11 @@ export const routes: Routes = [
   },
   {
     path: 'admin/login',
-    loadComponent: () => import('./features/auth/admin-login/admin-login.component').then(m => m.AdminLoginComponent),
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),
   },
   {
     path: 'driver/login',
-    loadComponent: () => import('./features/auth/driver-login/driver-login.component').then(m => m.DriverLoginComponent),
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),
   },
   {
     path: 'superadmin',
@@ -25,7 +25,14 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [authGuard, roleGuard(['admin'])],
-    loadComponent: () => import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboard),
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboard) },
+      { path: 'vehicles', loadComponent: () => import('./features/admin/vehicles/vehicles').then(m => m.VehiclesComponent) },
+      { path: 'trips', loadComponent: () => import('./features/admin/trips/trips').then(m => m.TripsComponent) },
+      { path: 'maintenance', loadComponent: () => import('./features/admin/maintenance/maintenance').then(m => m.MaintenanceComponent) },
+      { path: 'drivers', loadComponent: () => import('./features/admin/drivers/drivers').then(m => m.DriversComponent) }
+    ]
   },
   {
     path: 'driver',
