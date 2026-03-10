@@ -22,6 +22,8 @@ export class TripsComponent {
     vehicles = signal<any[]>([]);
     loading = false;
     isCreating = false;
+    isEditing = false;
+    editingId = signal<string | null>(null);
 
     tripForm = this.formBuilder.group({
         driverId: ['', Validators.required],
@@ -72,8 +74,36 @@ export class TripsComponent {
 
     toggleCreateForm() {
         this.isCreating = !this.isCreating;
+        this.isEditing = false;
+        this.editingId.set(null);
         if (!this.isCreating) {
             this.tripForm.reset({ status: 'in-progress', fareAmount: 0 });
+        }
+    }
+
+    editTrip(trip: any) {
+        this.isEditing = true;
+        this.isCreating = true;
+        this.editingId.set(trip._id);
+        this.tripForm.patchValue({
+            driverId: trip.driverId?._id || trip.driverId,
+            vehicleId: trip.vehicleId?._id || trip.vehicleId,
+            startLocation: trip.startLocation,
+            endLocation: trip.endLocation,
+            status: trip.status,
+            fareAmount: trip.fareAmount
+        });
+    }
+
+    deleteTrip(id: string) {
+        if (confirm('Are you sure you want to delete this trip record?')) {
+            this.apiService.HttpRequestHandler({
+                method: HttpMethod.DELETE,
+                endpoint: `/trips/${id}`
+            }).subscribe({
+                next: () => this.fetchTrips(),
+                error: (err) => console.error(err)
+            });
         }
     }
 
@@ -90,9 +120,12 @@ export class TripsComponent {
             tenantId: this.authService.currentUser()?._id
         };
 
+        const method = this.isEditing ? HttpMethod.PUT : HttpMethod.POST;
+        const endpoint = this.isEditing ? `/trips/${this.editingId()}` : '/trips';
+
         this.apiService.HttpRequestHandler({
-            method: HttpMethod.POST,
-            endpoint: '/trips',
+            method: method,
+            endpoint: endpoint,
             body: payload
         }).subscribe({
             next: () => {

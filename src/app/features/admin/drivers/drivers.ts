@@ -19,12 +19,14 @@ export class DriversComponent {
 
     drivers = signal<any[]>([]);
     isCreating = false;
+    isEditing = false;
+    editingId = signal<string | null>(null);
     loading = false;
 
     driverForm = this.formBuilder.group({
         name: ['', Validators.required],
         email: ['', [Validators.required, Validators.email]],
-        password: ['', [Validators.required, Validators.minLength(6)]],
+        password: [''], // Password optional during edit
     });
 
     constructor() {
@@ -34,22 +36,44 @@ export class DriversComponent {
     get f() { return this.driverForm.controls; }
 
     fetchDrivers() {
-        // This endpoint should be added to Endpoints and implemented on backend
         this.apiService.HttpRequestHandler({
             method: HttpMethod.GET,
-            endpoint: '/auth/drivers' // Custom endpoint for this tenant's drivers
+            endpoint: '/auth/drivers'
         }).subscribe({
-            next: (res) => {
-                this.drivers.set(res || []);
-            },
+            next: (res) => this.drivers.set(res || []),
             error: (err) => console.error(err)
         });
     }
 
     toggleCreateForm() {
         this.isCreating = !this.isCreating;
+        this.isEditing = false;
+        this.editingId.set(null);
         if (!this.isCreating) {
             this.driverForm.reset();
+        }
+    }
+
+    editDriver(driver: any) {
+        this.isEditing = true;
+        this.isCreating = true;
+        this.editingId.set(driver._id);
+        this.driverForm.patchValue({
+            name: driver.name,
+            email: driver.email,
+            password: ''
+        });
+    }
+
+    deleteDriver(id: string) {
+        if (confirm('Are you sure you want to delete this driver?')) {
+            this.apiService.HttpRequestHandler({
+                method: HttpMethod.DELETE,
+                endpoint: `/auth/${id}`
+            }).subscribe({
+                next: () => this.fetchDrivers(),
+                error: (err) => console.error(err)
+            });
         }
     }
 
@@ -61,17 +85,23 @@ export class DriversComponent {
 
         this.loading = true;
 
-        const payload = {
+        const payload: any = {
             name: this.f.name.value,
             email: this.f.email.value,
-            password: this.f.password.value,
             role: 'driver',
-            tenantId: this.authService.currentUser()?._id // Current admin's ID
+            tenantId: this.authService.currentUser()?._id
         };
 
+        if (this.f.password.value) {
+            payload.password = this.f.password.value;
+        }
+
+        const method = this.isEditing ? HttpMethod.PUT : HttpMethod.POST;
+        const endpoint = this.isEditing ? `/auth/${this.editingId()}` : '/auth/setup';
+
         this.apiService.HttpRequestHandler({
-            method: HttpMethod.POST,
-            endpoint: '/auth/setup', // Re-using setup for driver creation
+            method: method,
+            endpoint: endpoint,
             body: payload
         }).subscribe({
             next: () => {

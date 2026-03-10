@@ -21,6 +21,8 @@ export class MaintenanceComponent {
     vehicles = signal<any[]>([]);
     loading = false;
     isCreating = false;
+    isEditing = false;
+    editingId = signal<string | null>(null);
 
     maintenanceForm = this.formBuilder.group({
         vehicleId: ['', Validators.required],
@@ -61,12 +63,41 @@ export class MaintenanceComponent {
 
     toggleCreateForm() {
         this.isCreating = !this.isCreating;
+        this.isEditing = false;
+        this.editingId.set(null);
         if (!this.isCreating) {
             this.maintenanceForm.reset({
                 type: 'routine',
                 status: 'completed',
                 serviceDate: new Date().toISOString().substring(0, 10),
                 cost: 0
+            });
+        }
+    }
+
+    editRecord(record: any) {
+        this.isEditing = true;
+        this.isCreating = true;
+        this.editingId.set(record._id);
+        this.maintenanceForm.patchValue({
+            vehicleId: record.vehicleId?._id || record.vehicleId,
+            description: record.description,
+            cost: record.cost,
+            type: record.type,
+            status: record.status,
+            serviceDate: record.serviceDate ? new Date(record.serviceDate).toISOString().substring(0, 10) : '',
+            notes: record.notes
+        });
+    }
+
+    deleteRecord(id: string) {
+        if (confirm('Are you sure you want to delete this maintenance record?')) {
+            this.apiService.HttpRequestHandler({
+                method: HttpMethod.DELETE,
+                endpoint: `/maintenance/${id}`
+            }).subscribe({
+                next: () => this.fetchMaintenanceRecords(),
+                error: (err) => console.error(err)
             });
         }
     }
@@ -84,9 +115,12 @@ export class MaintenanceComponent {
             tenantId: this.authService.currentUser()?._id
         };
 
+        const method = this.isEditing ? HttpMethod.PUT : HttpMethod.POST;
+        const endpoint = this.isEditing ? `/maintenance/${this.editingId()}` : '/maintenance';
+
         this.apiService.HttpRequestHandler({
-            method: HttpMethod.POST,
-            endpoint: '/maintenance',
+            method: method,
+            endpoint: endpoint,
             body: payload
         }).subscribe({
             next: () => {

@@ -17,13 +17,15 @@ export class SuperadminDashboard {
   private apiService = inject(ApiService);
 
   isCreating = false;
+  isEditing = false;
+  editingId = signal<string | null>(null);
   loading = false;
   admins = signal<any[]>([]);
 
   adminForm = this.formBuilder.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: [''], // Optional during edit
     companyName: ['', Validators.required],
     companyAddress: ['', Validators.required],
     companyPhone: ['', Validators.required],
@@ -52,8 +54,37 @@ export class SuperadminDashboard {
 
   toggleCreateForm() {
     this.isCreating = !this.isCreating;
+    this.isEditing = false;
+    this.editingId.set(null);
     if (!this.isCreating) {
       this.adminForm.reset();
+    }
+  }
+
+  editAdmin(admin: any) {
+    this.isEditing = true;
+    this.isCreating = true;
+    this.editingId.set(admin._id);
+    this.adminForm.patchValue({
+      name: admin.name,
+      email: admin.email,
+      password: '',
+      companyName: admin.companyDetails?.name || '',
+      companyAddress: admin.companyDetails?.address || '',
+      companyPhone: admin.companyDetails?.phone || '',
+      companyGst: admin.companyDetails?.gst_number || ''
+    });
+  }
+
+  deleteAdmin(id: string) {
+    if (confirm('Are you sure you want to delete this administrator?')) {
+      this.apiService.HttpRequestHandler({
+        method: HttpMethod.DELETE,
+        endpoint: `/auth/${id}`
+      }).subscribe({
+        next: () => this.fetchAdmins(),
+        error: (err) => console.error(err)
+      });
     }
   }
 
@@ -65,10 +96,9 @@ export class SuperadminDashboard {
 
     this.loading = true;
 
-    const payload = {
+    const payload: any = {
       name: this.f.name.value,
       email: this.f.email.value,
-      password: this.f.password.value,
       role: 'admin',
       companyDetails: {
         name: this.f.companyName.value,
@@ -78,9 +108,16 @@ export class SuperadminDashboard {
       }
     };
 
+    if (this.f.password.value) {
+      payload.password = this.f.password.value;
+    }
+
+    const method = this.isEditing ? HttpMethod.PUT : HttpMethod.POST;
+    const endpoint = this.isEditing ? `/auth/${this.editingId()}` : Endpoints.AUTH.SETUP;
+
     this.apiService.HttpRequestHandler({
-      method: HttpMethod.POST,
-      endpoint: Endpoints.AUTH.SETUP,
+      method: method,
+      endpoint: endpoint,
       body: payload
     }).subscribe({
       next: () => {

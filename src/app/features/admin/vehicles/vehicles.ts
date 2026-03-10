@@ -19,6 +19,8 @@ export class VehiclesComponent {
 
     vehicles = signal<any[]>([]);
     isCreating = false;
+    isEditing = false;
+    editingId = signal<string | null>(null);
     loading = false;
 
     vehicleForm = this.formBuilder.group({
@@ -48,8 +50,36 @@ export class VehiclesComponent {
 
     toggleCreateForm() {
         this.isCreating = !this.isCreating;
+        this.isEditing = false;
+        this.editingId.set(null);
         if (!this.isCreating) {
             this.vehicleForm.reset({ year: new Date().getFullYear(), status: 'active' });
+        }
+    }
+
+    editVehicle(vehicle: any) {
+        this.isEditing = true;
+        this.isCreating = true;
+        this.editingId.set(vehicle._id);
+        this.vehicleForm.patchValue({
+            make: vehicle.make,
+            model: vehicle.model,
+            licensePlate: vehicle.licensePlate,
+            year: vehicle.year,
+            color: vehicle.color,
+            status: vehicle.status
+        });
+    }
+
+    deleteVehicle(id: string) {
+        if (confirm('Are you sure you want to delete this vehicle?')) {
+            this.apiService.HttpRequestHandler({
+                method: HttpMethod.DELETE,
+                endpoint: `/vehicles/${id}`
+            }).subscribe({
+                next: () => this.fetchVehicles(),
+                error: (err) => console.error(err)
+            });
         }
     }
 
@@ -66,9 +96,12 @@ export class VehiclesComponent {
             tenantId: this.authService.currentUser()?._id
         };
 
+        const method = this.isEditing ? HttpMethod.PUT : HttpMethod.POST;
+        const endpoint = this.isEditing ? `/vehicles/${this.editingId()}` : '/vehicles';
+
         this.apiService.HttpRequestHandler({
-            method: HttpMethod.POST,
-            endpoint: '/vehicles',
+            method: method,
+            endpoint: endpoint,
             body: payload
         }).subscribe({
             next: () => {

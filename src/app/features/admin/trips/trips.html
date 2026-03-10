@@ -56,7 +56,10 @@
                                 </td>
                                 <td class="fw-bold text-success">{{ trip.fareAmount | currency }}</td>
                                 <td class="text-end px-4">
-                                    <button class="btn btn-sm btn-outline-primary">Complete Trip</button>
+                                    <button class="btn btn-sm btn-outline-primary me-2"
+                                        (click)="editTrip(trip)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                        (click)="deleteTrip(trip._id)">Delete</button>
                                 </td>
                             </tr>
                             <tr *ngIf="trips().length === 0">
@@ -74,8 +77,9 @@
     <!-- Dispatch Form -->
     <div *ngIf="isCreating" class="card shadow-sm border-0">
         <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-            <h5 class="mb-0 fw-bold">Dispatch New Trip</h5>
-            <p class="text-secondary small mt-1">Select available driver and vehicle.</p>
+            <h5 class="mb-0 fw-bold">{{ isEditing ? 'Edit Trip Record' : 'Dispatch New Trip' }}</h5>
+            <p class="text-secondary small mt-1">{{ isEditing ? 'Update trip operational details.' : 'Select available
+                driver and vehicle.' }}</p>
         </div>
         <div class="card-body p-4">
             <form [formGroup]="tripForm" (ngSubmit)="onSubmit()">
@@ -111,6 +115,14 @@
                         <label class="form-label small fw-bold text-secondary">Initial Fare Est.</label>
                         <input type="number" class="form-control" formControlName="fareAmount" placeholder="0.00">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-secondary">Current Status</label>
+                        <select class="form-select" formControlName="status">
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
@@ -120,7 +132,7 @@
                         [disabled]="loading || tripForm.invalid">
                         <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"
                             aria-hidden="true"></span>
-                        Dispatch Trip
+                        {{ isEditing ? 'Update Trip Record' : 'Dispatch Trip' }}
                     </button>
                 </div>
             </form>
