@@ -1,20 +1,42 @@
 <div class="container-fluid py-4 px-md-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2 class="fw-bold mb-0">Active Trips & Operations</h2>
-            <p class="text-secondary">Track real-time trips and fleet mobilization.</p>
+            <h2 class="fw-bold mb-0">Active Trips</h2>
+            <p class="text-secondary small mb-0">Track real-time trips and fleet mobilization.</p>
         </div>
-        <button class="btn btn-primary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
-            *ngIf="!isCreating">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Dispatch New Trip
-        </button>
-        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
-            *ngIf="isCreating">
-            Cancel
-        </button>
+        <div class="d-flex gap-2 align-items-center">
+            <button (click)="exportTrips()" class="btn btn-sm btn-outline-success d-flex align-items-center gap-2"
+                title="Export Excel">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <span class="d-none d-md-inline">Export</span>
+            </button>
+            <div class="position-relative">
+                <input type="file" (change)="onFileChange($event)"
+                    class="position-absolute opacity-0 w-100 h-100 cursor-pointer" accept=".xlsx, .xls">
+                <button class="btn btn-sm btn-outline-info d-flex align-items-center gap-2" title="Import Excel">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <span class="d-none d-md-inline">Import</span>
+                </button>
+            </div>
+            <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
+                *ngIf="!isCreating">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Dispatch<span class="d-none d-md-inline"> Trip</span></span>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
+                (click)="toggleCreateForm()" *ngIf="isCreating">
+                Cancel
+            </button>
+        </div>
     </div>
 
     <!-- Trips List view -->
@@ -28,24 +50,27 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="px-4 py-3 small text-secondary fw-bold text-uppercase">Vehicle/Driver</th>
-                                <th class="py-3 small text-secondary fw-bold text-uppercase">Route</th>
+                                <th class="ps-4 py-3 small text-secondary fw-bold text-uppercase">#</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Vehicle/Driver</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Customer/Route</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Start Time</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Status</th>
-                                <th class="py-3 small text-secondary fw-bold text-uppercase">Fare</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Total Amount</th>
                                 <th class="text-end px-4 py-3 small text-secondary fw-bold text-uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let trip of trips()">
-                                <td class="px-4">
+                            <tr *ngFor="let trip of paginatedTrips(); let i = index">
+                                <td class="ps-4 text-secondary small">{{ (page() - 1) * pageSize() + i + 1 }}</td>
+                                <td>
                                     <div class="fw-bold">{{ trip.vehicleId?.make }} ({{ trip.vehicleId?.licensePlate }})
                                     </div>
                                     <div class="small text-secondary">{{ trip.driverId?.name }}</div>
                                 </td>
                                 <td>
-                                    <div class="small fw-bold">{{ trip.startLocation }}</div>
-                                    <div class="small text-secondary">→ {{ trip.endLocation || 'TBD' }}</div>
+                                    <div class="fw-bold">{{ trip.customerName }}</div>
+                                    <div class="small text-secondary">{{ trip.startLocation }} → {{ trip.endLocation ||
+                                        'TBD' }}</div>
                                 </td>
                                 <td>{{ trip.startTime | date:'short' }}</td>
                                 <td>
@@ -54,10 +79,10 @@
                                         {{ trip.status }}
                                     </span>
                                 </td>
-                                <td class="fw-bold text-success">{{ trip.fareAmount | currency }}</td>
+                                <td class="fw-bold text-success">{{ trip.totalAmount | currency:'INR':'symbol' }}</td>
                                 <td class="text-end px-4">
                                     <button class="btn btn-sm btn-outline-primary me-2"
-                                        (click)="editTrip(trip)">Edit</button>
+                                        (click)="editTrip(trip)">View/Edit</button>
                                     <button class="btn btn-sm btn-outline-danger"
                                         (click)="deleteTrip(trip._id)">Delete</button>
                                 </td>
@@ -69,6 +94,35 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination UI -->
+                <div class="card-footer bg-white py-2 px-3 border-top-0 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2"
+                    *ngIf="trips().length > pageSize()">
+                    <div class="small text-secondary text-center text-sm-start">
+                        <span class="d-none d-sm-inline">Showing</span> {{ (page() - 1) * pageSize() + 1 }} - {{ page()
+                        * pageSize() > trips().length ? trips().length : page() * pageSize() }} <span
+                            class="d-none d-sm-inline">of {{ trips().length }}</span>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-xs btn-outline-secondary p-1 px-2" [disabled]="page() === 1"
+                            (click)="goToPage(page() - 1)">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="small fw-bold text-navy mx-1">
+                            {{ page() }} / {{ totalPages() }}
+                        </div>
+                        <button class="btn btn-xs btn-outline-secondary p-1 px-2" [disabled]="page() === totalPages()"
+                            (click)="goToPage(page() + 1)">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -85,7 +139,7 @@
             <form [formGroup]="tripForm" (ngSubmit)="onSubmit()">
 
                 <div class="row g-3 mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label small fw-bold text-secondary">Assigned Driver</label>
                         <select class="form-select" formControlName="driverId"
                             [ngClass]="{'is-invalid': f['driverId'].touched && f['driverId'].errors}">
@@ -93,7 +147,7 @@
                             <option *ngFor="let d of drivers()" [value]="d._id">{{ d.name }} ({{ d.email }})</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label small fw-bold text-secondary">Vehicle</label>
                         <select class="form-select" formControlName="vehicleId"
                             [ngClass]="{'is-invalid': f['vehicleId'].touched && f['vehicleId'].errors}">
@@ -102,25 +156,60 @@
                                 v.licensePlate }}</option>
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Customer Name</label>
+                        <input type="text" class="form-control" formControlName="customerName"
+                            placeholder="Customer Name">
+                    </div>
+
                     <div class="col-md-6">
                         <label class="form-label small fw-bold text-secondary">Start Location</label>
                         <input type="text" class="form-control" formControlName="startLocation"
                             placeholder="Initial Pickup Point">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold text-secondary">End Location (Optional)</label>
+                        <label class="form-label small fw-bold text-secondary">End Location</label>
                         <input type="text" class="form-control" formControlName="endLocation" placeholder="Destination">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-secondary">Initial Fare Est.</label>
-                        <input type="number" class="form-control" formControlName="fareAmount" placeholder="0.00">
+
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Start Odometer</label>
+                        <input type="number" class="form-control" formControlName="startOdometer">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">End Odometer</label>
+                        <input type="number" class="form-control" formControlName="endOdometer">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Total KM</label>
+                        <input type="number" class="form-control" formControlName="totalKm">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Advance</label>
+                        <input type="number" class="form-control" formControlName="advanceAmount">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Total Amount</label>
+                        <input type="number" class="form-control" formControlName="totalAmount">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Balance</label>
+                        <input type="number" class="form-control" formControlName="balanceAmount">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold text-secondary">Current Status</label>
                         <select class="form-select" formControlName="status">
                             <option value="in-progress">In Progress</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Payment Status</label>
+                        <select class="form-select" formControlName="paymentStatus">
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
                         </select>
                     </div>
                 </div>

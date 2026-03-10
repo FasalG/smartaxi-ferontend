@@ -4,7 +4,8 @@ export const Endpoints = {
         REGISTER: '/auth/register',
         CURRENT_USER: '/auth/me',
         SETUP: '/auth/setup',
-        GET_ADMINS: '/auth/admins'
+        GET_ADMINS: '/auth/admins',
+        GET_DRIVERS: '/auth/drivers'
     },
     BOOKINGS: {
         BASE: '/bookings',
@@ -37,5 +38,12 @@ export const Endpoints = {
     },
     ANALYTICS: {
         DASHBOARD: '/analytics/dashboard'
+    },
+    TRIPS: {
+        BASE: '/trips',
+        DRIVER: '/trips/driver'
+    },
+    VEHICLES: {
+        BASE: '/vehicles'
     }
 };

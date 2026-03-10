@@ -1,0 +1,326 @@
+<div class="reports-container p-4">
+    <!-- Mobile Friendly Reports Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 d-print-none">
+        <div>
+            <h2 class="fw-bold mb-0">Business Reports</h2>
+            <p class="text-secondary small mb-0">Financial performance and trip analytics.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button (click)="exportReports()" class="btn btn-sm btn-outline-success d-flex align-items-center gap-2"
+                title="Export Excel">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <span class="d-none d-md-inline">Export</span>
+            </button>
+            <div class="position-relative">
+                <input type="file" (change)="onFileChange($event)"
+                    class="position-absolute opacity-0 w-100 h-100 cursor-pointer" accept=".xlsx, .xls">
+                <button class="btn btn-sm btn-outline-info d-flex align-items-center gap-2" title="Import Excel">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <span class="d-none d-md-inline">Import</span>
+                </button>
+            </div>
+            <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" (click)="printReport()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+                    </path>
+                </svg>
+                <span class="d-none d-md-inline">Print Report</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- FILTERS BAR -->
+    <div class="card border-0 shadow-sm p-4 mb-4 d-print-none">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-secondary">Filter by Driver</label>
+                <select [(ngModel)]="filterDriverId" class="form-select border-0 bg-light">
+                    <option value="">All Drivers</option>
+                    <option *ngFor="let d of drivers()" [value]="d._id">{{ d.name }}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-secondary">Filter by Vehicle</label>
+                <select [(ngModel)]="filterVehicleId" class="form-select border-0 bg-light">
+                    <option value="">All Vehicles</option>
+                    <option *ngFor="let v of vehicles()" [value]="v._id">{{ v.licensePlate }} ({{ v.make }})</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary">From Date</label>
+                <input type="date" [(ngModel)]="filterStartDate" class="form-control border-0 bg-light">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary">To Date</label>
+                <input type="date" [(ngModel)]="filterEndDate" class="form-control border-0 bg-light">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button (click)="resetFilters()" class="btn btn-light w-100 rounded-3">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUMMARY STATS -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4 bg-navy text-white text-center">
+                <p class="small text-white-50 mb-1 uppercase">Total Earnings</p>
+                <h2 class="fw-bold mb-0">₹{{ totalEarnings() | number }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4 text-center">
+                <p class="small text-secondary mb-1 uppercase">Total Distance</p>
+                <h2 class="fw-bold mb-0 text-navy">{{ totalKm() | number }} <span class="fs-5">KM</span></h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4 text-center">
+                <p class="small text-secondary mb-1 uppercase">Trip Count</p>
+                <h2 class="fw-bold mb-0 text-navy">{{ filteredTrips().length }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAILED TABLE -->
+    <div class="card border-0 shadow-sm p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr class="text-secondary small text-uppercase fw-bold">
+                        <th class="ps-4 py-3">#</th>
+                        <th class="py-3">Date</th>
+                        <th class="py-3">Driver</th>
+                        <th class="py-3">Vehicle</th>
+                        <th class="py-3">Customer</th>
+                        <th class="py-3">Distance</th>
+                        <th class="py-3">Total</th>
+                        <th class="py-3">Paid</th>
+                        <th class="py-3">Balance</th>
+                        <th class="py-3">Status</th>
+                        <th class="pe-4 py-3">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let trip of paginatedTrips(); let i = index" class="align-middle">
+                        <td class="ps-4 text-secondary small">{{ (page() - 1) * pageSize() + i + 1 }}</td>
+                        <td class="py-3">
+                            <div class="fw-bold">{{ trip.startTime | date:'mediumDate' }}</div>
+                            <div class="smaller text-secondary">{{ trip.startTime | date:'shortTime' }}</div>
+                        </td>
+                        <td class="py-3">
+                            <div class="fw-bold text-navy">{{ trip.driverId?.name }}</div>
+                            <div class="smaller text-secondary">{{ trip.driverId?.email }}</div>
+                        </td>
+                        <td class="py-3">
+                            <div class="fw-bold">{{ trip.vehicleId?.licensePlate }}</div>
+                            <div class="smaller text-secondary">{{ trip.vehicleId?.make }}</div>
+                        </td>
+                        <td class="py-3">{{ trip.customerName }}</td>
+                        <td class="py-3">{{ trip.totalKm }} KM</td>
+                        <td class="py-3 fw-bold">₹{{ trip.totalAmount }}</td>
+                        <td class="py-3 text-success">₹{{ trip.advanceAmount }}</td>
+                        <td class="py-3 text-danger fw-bold">₹{{ trip.balanceAmount }}</td>
+                        <td class="py-3">
+                            <span class="badge rounded-pill" [ngClass]="{
+                                'bg-success': trip.status === 'completed',
+                                'bg-warning': trip.status === 'in-progress',
+                                'bg-danger': trip.status === 'cancelled'
+                            }">{{ trip.status }}</span>
+                        </td>
+                        <td class="pe-4 py-3">
+                            <button (click)="viewTripDetail(trip)"
+                                class="btn btn-sm btn-outline-navy rounded-pill px-3">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="filteredTrips().length === 0">
+                        <td colspan="10" class="text-center py-5 text-secondary">
+                            No trip records found for current filters
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination UI -->
+        <div class="card-footer bg-white py-2 px-3 border-top-0 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2"
+            *ngIf="filteredTrips().length > pageSize()">
+            <div class="small text-secondary text-center text-sm-start">
+                <span class="d-none d-sm-inline">Showing</span> {{ (page() - 1) * pageSize() + 1 }} - {{ page() *
+                pageSize() > filteredTrips().length ? filteredTrips().length : page() * pageSize() }} <span
+                    class="d-none d-sm-inline">of {{ filteredTrips().length }}</span>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-xs btn-outline-secondary p-1 px-2" [disabled]="page() === 1"
+                    (click)="goToPage(page() - 1)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
+                </button>
+                <div class="small fw-bold text-navy mx-1">
+                    {{ page() }} / {{ totalPages() }}
+                </div>
+                <button class="btn btn-xs btn-outline-secondary p-1 px-2" [disabled]="page() === totalPages()"
+                    (click)="goToPage(page() + 1)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRIP DETAIL OVERLAY (Copied from Driver Dashboard with Admin Styles) -->
+    <div *ngIf="showTripDetail()" class="modal-overlay animate-fade-in d-print-none">
+        <div class="modal-content-premium p-4 shadow-lg border-0">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold text-navy mb-0">Trip Voucher Details</h4>
+                <button (click)="closeTripDetail()" class="btn-close-custom">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="row g-4 overflow-y-auto" style="max-height: 80vh;">
+                <div class="col-md-6">
+                    <div class="detail-group">
+                        <label class="form-label-premium">Customer</label>
+                        <div class="fw-bold text-navy fs-5">{{ selectedTrip()?.customerName }}</div>
+                        <div class="text-secondary small">{{ selectedTrip()?.tripType }} Trip • {{
+                            selectedTrip()?.acType }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="detail-group">
+                        <label class="form-label-premium">Trip Date</label>
+                        <div class="fw-bold text-navy">{{ selectedTrip()?.startTime | date:'mediumDate' }}</div>
+                        <div class="small text-secondary">{{ selectedTrip()?.startTime | date:'shortTime' }} - {{
+                            selectedTrip()?.endTime | date:'shortTime' }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 border-top pt-3">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <label class="form-label-premium">Driver</label>
+                            <div class="fw-bold text-navy">{{ selectedTrip()?.driverId?.name }}</div>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label-premium">Vehicle</label>
+                            <div class="fw-bold text-navy">{{ selectedTrip()?.vehicleId?.licensePlate }}</div>
+                            <div class="smaller text-secondary">{{ selectedTrip()?.vehicleId?.make }}</div>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label-premium">Total KM</label>
+                            <div class="fw-bold text-navy">{{ selectedTrip()?.totalKm }} KM</div>
+                            <div class="smaller text-secondary">{{ selectedTrip()?.startOdometer }} → {{
+                                selectedTrip()?.endOdometer }}</div>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label-premium">Status</label>
+                            <div class="badge rounded-pill d-block"
+                                [ngClass]="selectedTrip()?.status === 'completed' ? 'bg-success' : 'bg-warning'">
+                                {{ selectedTrip()?.status | uppercase }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 bg-light p-4 rounded-4">
+                    <h6 class="fw-bold text-navy mb-3">Hire Charges Breakdown</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between border-bottom pb-1">
+                            <span class="text-secondary small">Minimum Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.minimumCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.extraKmCharges">
+                            <span class="text-secondary small">Extra KM Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.extraKmCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.extraHoursCharges">
+                            <span class="text-secondary small">Extra Hours Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.extraHoursCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.tollParking">
+                            <span class="text-secondary small">Toll & Parking</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.tollParking }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.nightCharges">
+                            <span class="text-secondary small">Night Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.nightCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.permitTax">
+                            <span class="text-secondary small">Permit Tax</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.permitTax }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.fuelCharges">
+                            <span class="text-secondary small">Fuel Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.fuelCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2">
+                            <span class="fw-bold text-navy">TOTAL AMOUNT</span>
+                            <span class="fw-bold text-navy fs-5">₹{{ selectedTrip()?.totalAmount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-success">
+                            <span class="small fw-bold">Advance Received</span>
+                            <span class="fw-bold">- ₹{{ selectedTrip()?.advanceAmount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-info" *ngIf="selectedTrip()?.paidAmount">
+                            <span class="small fw-bold">Customer Paid</span>
+                            <span class="fw-bold">- ₹{{ selectedTrip()?.paidAmount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top border-2">
+                            <span class="fw-bold text-danger">BALANCE PAYABLE</span>
+                            <span class="fw-bold text-danger fs-4">₹{{ selectedTrip()?.balanceAmount }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="row g-3">
+                        <div class="col-md-6" *ngIf="selectedTrip()?.visitingPlaces">
+                            <label class="form-label-premium">Visiting Places</label>
+                            <p class="small text-secondary mb-0">{{ selectedTrip()?.visitingPlaces }}</p>
+                        </div>
+                        <div class="col-12" *ngIf="selectedTrip()?.guestComments">
+                            <label class="form-label-premium">Guest Comments/Notes</label>
+                            <p class="fst-italic text-secondary bg-white p-3 rounded border">{{
+                                selectedTrip()?.guestComments }}
+                            </p>
+                        </div>
+
+                        <!-- ADMIN ACTION AREA -->
+                        <div class="col-12 mt-3 text-center border-top pt-4"
+                            *ngIf="selectedTrip()?.paymentStatus === 'pending'">
+                            <button (click)="approveTrip(selectedTrip())" [disabled]="approving()"
+                                class="btn btn-navy btn-lg px-5 rounded-pill shadow-lg hover-scale w-100">
+                                {{ approving() ? 'Processing...' : 'Approve & Settle Balance' }}
+                            </button>
+                            <p class="text-secondary smaller mt-2">By clicking, you confirm the driver has handed over
+                                the balance amount.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

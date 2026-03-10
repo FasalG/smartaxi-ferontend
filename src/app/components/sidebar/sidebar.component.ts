@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, computed } from '@angular/core';
+import { Component, EventEmitter, Output, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -116,9 +116,18 @@ interface MenuItem {
     }
   `]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   authService = inject(AuthService);
   private router = inject(Router);
+
+  constructor() { }
+
+  ngOnInit() {
+    const user = this.authService.currentUser();
+    if (user && user.role === 'driver') {
+      this.authService.getMe().subscribe();
+    }
+  }
 
   @Output() menuClick = new EventEmitter<void>();
 
@@ -138,6 +147,7 @@ export class SidebarComponent {
         { route: 'admin/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
         { route: 'admin/vehicles', label: 'Vehicles', icon: 'Car' },
         { route: 'admin/trips', label: 'Trips', icon: 'MapPin' },
+        { route: 'admin/reports', label: 'Reports', icon: 'BarChart3' },
         { route: 'admin/maintenance', label: 'Maintenance', icon: 'Wrench' },
         { route: 'admin/drivers', label: 'Drivers', icon: 'Users' }
       ];

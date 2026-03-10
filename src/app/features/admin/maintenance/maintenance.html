@@ -1,20 +1,42 @@
 <div class="container-fluid py-4 px-md-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <h2 class="fw-bold mb-0">Maintenance Log</h2>
-            <p class="text-secondary">Keep track of vehicle servicing, repairs, and uptime costs.</p>
+            <p class="text-secondary small mb-0">Keep track of vehicle servicing and uptime costs.</p>
         </div>
-        <button class="btn btn-primary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
-            *ngIf="!isCreating">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Record Service
-        </button>
-        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
-            *ngIf="isCreating">
-            Cancel
-        </button>
+        <div class="d-flex gap-2 align-items-center">
+            <button (click)="exportMaintenance()" class="btn btn-sm btn-outline-success d-flex align-items-center gap-2"
+                title="Export Excel">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <span class="d-none d-md-inline">Export</span>
+            </button>
+            <div class="position-relative">
+                <input type="file" (change)="onFileChange($event)"
+                    class="position-absolute opacity-0 w-100 h-100 cursor-pointer" accept=".xlsx, .xls">
+                <button class="btn btn-sm btn-outline-info d-flex align-items-center gap-2" title="Import Excel">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <span class="d-none d-md-inline">Import</span>
+                </button>
+            </div>
+            <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
+                *ngIf="!isCreating">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Record<span class="d-none d-md-inline"> Service</span></span>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
+                (click)="toggleCreateForm()" *ngIf="isCreating">
+                Cancel
+            </button>
+        </div>
     </div>
 
     <!-- Maintenance List view -->
@@ -28,7 +50,8 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="px-4 py-3 small text-secondary fw-bold text-uppercase">Vehicle</th>
+                                <th class="ps-4 py-3 small text-secondary fw-bold text-uppercase">#</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Vehicle</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Service Type</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Description</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Date</th>
@@ -37,8 +60,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let record of maintenanceRecords()">
-                                <td class="px-4 fw-bold">{{ record.vehicleId?.make }} ({{ record.vehicleId?.licensePlate
+                            <tr *ngFor="let record of paginatedMaintenance(); let i = index">
+                                <td class="ps-4 text-secondary small">{{ (page() - 1) * pageSize() + i + 1 }}</td>
+                                <td class="fw-bold">{{ record.vehicleId?.make }} ({{ record.vehicleId?.licensePlate
                                     }})</td>
                                 <td>
                                     <span class="badge"
@@ -63,6 +87,35 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination UI -->
+                <div class="card-footer bg-white py-2 px-3 border-top-0 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2"
+                    *ngIf="maintenanceRecords().length > pageSize()">
+                    <div class="small text-secondary text-center text-sm-start">
+                        <span class="d-none d-sm-inline">Showing</span> {{ (page() - 1) * pageSize() + 1 }} - {{ page()
+                        * pageSize() > maintenanceRecords().length ? maintenanceRecords().length : page() * pageSize()
+                        }} <span class="d-none d-sm-inline">of {{ maintenanceRecords().length }}</span>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-xs btn-outline-secondary p-1 px-2" [disabled]="page() === 1"
+                            (click)="goToPage(page() - 1)">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="small fw-bold text-navy mx-1">
+                            {{ page() }} / {{ totalPages() }}
+                        </div>
+                        <button class="btn btn-xs btn-outline-secondary p-1 px-2" [disabled]="page() === totalPages()"
+                            (click)="goToPage(page() + 1)">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

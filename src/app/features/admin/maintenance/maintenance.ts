@@ -1,10 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { Endpoints } from '../../../core/constants/endpoints';
 import { HttpMethod } from '../../../core/enums/httpmethod.enum';
 import { AuthService } from '../../../services/auth.service';
+import { ExcelService } from '../../../services/excel.service';
 
 @Component({
     selector: 'app-maintenance',
@@ -16,6 +17,7 @@ export class MaintenanceComponent {
     private formBuilder = inject(FormBuilder);
     private apiService = inject(ApiService);
     private authService = inject(AuthService);
+    private excelService = inject(ExcelService);
 
     maintenanceRecords = signal<any[]>([]);
     vehicles = signal<any[]>([]);
@@ -23,6 +25,17 @@ export class MaintenanceComponent {
     isCreating = false;
     isEditing = false;
     editingId = signal<string | null>(null);
+
+    // Pagination
+    page = signal<number>(1);
+    pageSize = signal<number>(10);
+
+    paginatedMaintenance = computed(() => {
+        const startIndex = (this.page() - 1) * this.pageSize();
+        return this.maintenanceRecords().slice(startIndex, startIndex + this.pageSize());
+    });
+
+    totalPages = computed(() => Math.ceil(this.maintenanceRecords().length / this.pageSize()));
 
     maintenanceForm = this.formBuilder.group({
         vehicleId: ['', Validators.required],
@@ -40,6 +53,37 @@ export class MaintenanceComponent {
     }
 
     get f() { return this.maintenanceForm.controls; }
+
+    exportMaintenance() {
+        this.excelService.exportToExcel(this.maintenanceRecords(), 'Maintenance_Records');
+    }
+
+    onFileChange(event: any) {
+        const file = event.target.files[0];
+        if (file) {
+            this.excelService.importFromExcel(file).then((data) => {
+                data.forEach((record: any) => {
+                    const payload = {
+                        vehicleId: record.vehicleId || record.VehicleId,
+                        description: record.description || record.Description,
+                        cost: Number(record.cost || record.Cost || 0),
+                        type: record.type || record.Type || 'routine',
+                        status: record.status || record.Status || 'completed',
+                        serviceDate: record.serviceDate || record.ServiceDate || new Date().toISOString().substring(0, 10),
+                        notes: record.notes || record.Notes || '',
+                        tenantId: this.authService.currentUser()?._id
+                    };
+                    this.apiService.HttpRequestHandler({
+                        method: HttpMethod.POST,
+                        endpoint: '/maintenance',
+                        body: payload
+                    }).subscribe({
+                        next: () => this.fetchMaintenanceRecords()
+                    });
+                });
+            }).catch(err => console.error('Error importing Excel:', err));
+        }
+    }
 
     fetchMaintenanceRecords() {
         this.apiService.HttpRequestHandler({
@@ -130,5 +174,11 @@ export class MaintenanceComponent {
             },
             error: () => this.loading = false
         });
+    }
+
+    goToPage(p: number) {
+        if (p >= 1 && p <= this.totalPages()) {
+            this.page.set(p);
+        }
     }
 }

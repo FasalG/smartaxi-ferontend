@@ -149,3 +149,50 @@ export interface Maintenance {
     status: 'scheduled' | 'in_progress' | 'completed' | 'overdue';
     created_at: string;
 }
+
+export interface Vehicle {
+    _id?: string;
+    make: string;
+    model: string;
+    year: number;
+    licensePlate: string;
+    color: string;
+    status: 'active' | 'maintenance' | 'inactive';
+}
+
+export interface Trip {
+    _id?: string;
+    driverId: any;
+    vehicleId: any;
+    tenantId: string;
+    startTime: string;
+    endTime?: string;
+    startLocation: string;
+    endLocation?: string;
+    customerName: string;
+    visitingPlaces: string;
+    tripType: 'Cash' | 'Credit';
+    acType: 'A/C' | 'Non A/C';
+    startOdometer: number;
+    endOdometer?: number;
+    totalKm?: number;
+    totalDays?: number;
+    totalHours?: number;
+    minimumCharges?: number;
+    extraKmCharges?: number;
+    extraHoursCharges?: number;
+    tollParking?: number;
+    permitTax?: number;
+    nightCharges?: number;
+    fuelCharges?: number;
+    advanceAmount?: number;
+    totalAmount?: number;
+    balanceAmount?: number;
+    paidAmount?: number;
+    guestComments?: string;
+    status: 'in-progress' | 'completed' | 'cancelled';
+    paymentStatus: 'pending' | 'paid';
+    notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}

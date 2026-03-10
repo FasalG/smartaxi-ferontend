@@ -1,10 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { Endpoints } from '../../../core/constants/endpoints';
 import { HttpMethod } from '../../../core/enums/httpmethod.enum';
 import { AuthService } from '../../../services/auth.service';
+import { Router } from '@angular/router';
+import { ExcelService } from '../../../services/excel.service';
 
 @Component({
     selector: 'app-drivers',
@@ -16,12 +18,25 @@ export class DriversComponent {
     private formBuilder = inject(FormBuilder);
     private apiService = inject(ApiService);
     private authService = inject(AuthService);
+    private router = inject(Router);
+    private excelService = inject(ExcelService);
 
     drivers = signal<any[]>([]);
     isCreating = false;
     isEditing = false;
     editingId = signal<string | null>(null);
     loading = false;
+
+    // Pagination
+    page = signal<number>(1);
+    pageSize = signal<number>(10);
+
+    paginatedDrivers = computed(() => {
+        const startIndex = (this.page() - 1) * this.pageSize();
+        return this.drivers().slice(startIndex, startIndex + this.pageSize());
+    });
+
+    totalPages = computed(() => Math.ceil(this.drivers().length / this.pageSize()));
 
     driverForm = this.formBuilder.group({
         name: ['', Validators.required],
@@ -34,6 +49,35 @@ export class DriversComponent {
     }
 
     get f() { return this.driverForm.controls; }
+
+    exportDrivers() {
+        this.excelService.exportToExcel(this.drivers(), 'Drivers');
+    }
+
+    onFileChange(event: any) {
+        const file = event.target.files[0];
+        if (file) {
+            this.excelService.importFromExcel(file).then((data) => {
+                data.forEach((driver: any) => {
+                    const payload: any = {
+                        name: driver.name || driver.Name,
+                        email: driver.email || driver.Email,
+                        password: driver.password || driver.Password || '123456', // Default password for imported drivers
+                        role: 'driver',
+                        tenantId: this.authService.currentUser()?._id
+                    };
+
+                    this.apiService.HttpRequestHandler({
+                        method: HttpMethod.POST,
+                        endpoint: '/auth/setup',
+                        body: payload
+                    }).subscribe({
+                        next: () => this.fetchDrivers()
+                    });
+                });
+            }).catch(err => console.error('Error importing Excel:', err));
+        }
+    }
 
     fetchDrivers() {
         this.apiService.HttpRequestHandler({
@@ -111,5 +155,15 @@ export class DriversComponent {
             },
             error: () => this.loading = false
         });
+    }
+
+    viewDriverReport(driverId: string) {
+        this.router.navigate(['/admin/reports'], { queryParams: { driverId } });
+    }
+
+    goToPage(p: number) {
+        if (p >= 1 && p <= this.totalPages()) {
+            this.page.set(p);
+        }
     }
 }

@@ -1,25 +1,421 @@
-<div class="container py-5">
+<div class="driver-dashboard p-4 min-vh-100">
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold mb-0">Driver Portal</h2>
-            <p class="text-secondary">Manage your active trips and view driving history.</p>
+            <h2 class="fw-bold text-navy mb-1">Driver Dashboard</h2>
+            <p class="text-secondary small mb-0">Welcome back, {{ currentUser()?.name }}</p>
+        </div>
+        <div *ngIf="activeTrip()" class="status-badge pulse">
+            <span class="dot bg-success"></span> Active Trip In Progress
         </div>
     </div>
 
     <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
-                    <h4 class="fw-bold text-success mb-3">Start New Trip</h4>
-                    <button class="btn btn-success btn-lg mx-auto rounded-pill px-5">Go Online</button>
+        <!-- LEFT PANEL: ACTION AREA -->
+        <div class="col-lg-8">
+
+            <!-- START TRIP CARD (If no active trip) -->
+            <div *ngIf="!activeTrip() && !showStartTripForm()"
+                class="card welcome-card border-0 shadow-sm p-5 text-center">
+                <div class="mb-4">
+                    <div class="icon-circle mx-auto bg-success-soft text-success">
+                        <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-3">Ready for a new trip?</h3>
+                <p class="text-secondary max-w-400 mx-auto mb-4">Ensure your vehicle is ready and all details are
+                    accurate before starting.</p>
+                <button (click)="showStartTripForm.set(true)"
+                    class="btn btn-navy btn-lg px-5 rounded-pill shadow-lg hover-scale">
+                    Start New Trip
+                </button>
+            </div>
+
+            <!-- START TRIP FORM -->
+            <div *ngIf="showStartTripForm()" class="card border-0 shadow-sm p-4 animate-fade-in">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-navy mb-0">Trip Voucher Setup</h4>
+                    <button (click)="showStartTripForm.set(false)" class="btn-close-custom">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form [formGroup]="startTripForm" (ngSubmit)="onStartTrip()" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Select Vehicle</label>
+                        <select formControlName="vehicleId" class="form-control-premium">
+                            <option value="">Choose Vehicle...</option>
+                            <option *ngFor="let v of vehicles()" [value]="v._id">
+                                {{ v.make }} {{ v.model }} ({{ v.licensePlate }})
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Customer / Company Name</label>
+                        <input formControlName="customerName" type="text" class="form-control-premium"
+                            placeholder="e.g. MRF Paint Company">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label-premium">Visiting Places (From - To)</label>
+                        <textarea formControlName="visitingPlaces" rows="2" class="form-control-premium"
+                            placeholder="e.g. Woodies to Edathara to Office"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Current Location</label>
+                        <input formControlName="startLocation" type="text" class="form-control-premium"
+                            placeholder="Current Location">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Starting Odometer</label>
+                        <input formControlName="startOdometer" type="number" class="form-control-premium"
+                            placeholder="Enter KM reading">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Trip Type</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check-premium">
+                                <input formControlName="tripType" type="radio" value="Cash" id="typeCash">
+                                <label for="typeCash">Cash</label>
+                            </div>
+                            <div class="form-check-premium">
+                                <input formControlName="tripType" type="radio" value="Credit" id="typeCredit">
+                                <label for="typeCredit">Credit</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">AC Type</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check-premium">
+                                <input formControlName="acType" type="radio" value="A/C" id="acYes">
+                                <label for="acYes">A/C</label>
+                            </div>
+                            <div class="form-check-premium">
+                                <input formControlName="acType" type="radio" value="Non A/C" id="acNo">
+                                <label for="acNo">Non A/C</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4 text-end">
+                        <button type="submit" [disabled]="loading() || startTripForm.invalid"
+                            class="btn btn-navy px-5 rounded-pill">
+                            {{ loading() ? 'Starting...' : 'Go Live Now' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ACTIVE TRIP VIEW -->
+            <div *ngIf="activeTrip() && !showCompleteTripForm()"
+                class="card border-0 shadow-sm p-0 overflow-hidden animate-fade-in">
+                <div class="bg-navy text-white p-4">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <p class="smaller text-white-50 mb-0 uppercase tracking-widest">Ongoing Trip Since {{
+                                activeTrip()?.startTime | date:'shortTime' }}</p>
+                            <h4 class="fw-bold mb-0">{{ activeTrip()?.customerName }}</h4>
+                        </div>
+                        <div class="col-auto">
+                            <button (click)="showCompleteTripForm.set(true)"
+                                class="btn btn-warning fw-bold px-4 rounded-pill">
+                                Complete Trip
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-light">
+                    <div class="row g-4">
+                        <div class="col-6 col-md-3">
+                            <label class="smaller text-secondary d-block">Vehicle</label>
+                            <span class="fw-bold text-navy">{{ activeTrip()?.vehicleId?.make }} {{
+                                activeTrip()?.vehicleId?.model }}</span>
+                            <div class="small text-secondary">{{ activeTrip()?.vehicleId?.licensePlate }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="smaller text-secondary d-block">From</label>
+                            <span class="fw-bold">{{ activeTrip()?.startLocation }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="smaller text-secondary d-block">Visiting</label>
+                            <span class="fw-bold">{{ activeTrip()?.visitingPlaces }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPLETE TRIP FORM -->
+            <div *ngIf="showCompleteTripForm()" class="card border-0 shadow-sm p-4 animate-fade-in">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-navy mb-0">Trip Finalization</h4>
+                    <button (click)="showCompleteTripForm.set(false)" class="btn-close-custom">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form [formGroup]="completeTripForm" (ngSubmit)="onCompleteTrip()" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Closing Location</label>
+                        <input formControlName="endLocation" type="text" class="form-control-premium"
+                            placeholder="Destination">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Closing Odometer</label>
+                        <input formControlName="endOdometer" type="number" class="form-control-premium"
+                            placeholder="Final KM reading">
+                    </div>
+
+                    <div class="col-12 mt-4 border-top pt-4">
+                        <h5 class="fw-bold text-navy mb-3">Charges Calculation</h5>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Minimum Charges</label>
+                                <input formControlName="minimumCharges" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Extra KM Charges</label>
+                                <input formControlName="extraKmCharges" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Extra hours charges</label>
+                                <input formControlName="extraHoursCharges" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Toll & Parking</label>
+                                <input formControlName="tollParking" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Night Charges</label>
+                                <input formControlName="nightCharges" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Fuel Charges</label>
+                                <input formControlName="fuelCharges" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Permit Tax</label>
+                                <input formControlName="permitTax" type="number" class="form-control-premium">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium">Less Advance</label>
+                                <input formControlName="advanceAmount" type="number" class="form-control-premium">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUMMARY SECTION -->
+                    <div class="col-12 mt-4 bg-light p-4 rounded-4">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <p class="smaller text-secondary mb-1">Total Distance</p>
+                                <h4 class="fw-bold mb-0 text-navy">{{ totalKm() }} KM</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="smaller text-secondary mb-1">Total Amount</p>
+                                <h4 class="fw-bold mb-0 text-primary">₹{{ totalAmount() }}</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="smaller text-secondary mb-1">Advance</p>
+                                <h4 class="fw-bold mb-0 text-success">₹{{ completeTripForm.get('advanceAmount')?.value
+                                    || 0 }}</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="smaller text-secondary mb-1">BALANCE</p>
+                                <h4 class="fw-bold mb-0 text-danger">₹{{ balanceAmount() }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4 text-end">
+                        <button type="submit" [disabled]="loading() || completeTripForm.invalid"
+                            class="btn btn-navy px-5 rounded-pill shadow-lg">
+                            Finalize Trip & Save Voucher
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- RIGHT PANEL: STATS & HISTORY -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 mb-4">
+                <h5 class="fw-bold text-navy mb-4">Quick Stats</h5>
+                <div class="d-flex flex-column gap-3">
+                    <div class="stat-item p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                        <span class="text-secondary small">Total Trips</span>
+                        <span class="fw-bold text-navy">{{ pastTrips().length }}</span>
+                    </div>
+                    <div class="stat-item p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                        <span class="text-secondary small">Status</span>
+                        <span class="badge" [ngClass]="activeTrip() ? 'bg-success' : 'bg-secondary'">
+                            {{ activeTrip() ? 'In Trip' : 'Available' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm h-100 p-0 overflow-hidden">
+                <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-navy mb-0">Recent Trips</h5>
+                    <button (click)="toggleHistory()"
+                        class="btn btn-sm btn-link text-navy text-decoration-none p-0 fw-bold">
+                        {{ showHistory() ? 'Collapse' : 'View All' }}
+                    </button>
+                </div>
+                <div class="px-2 py-2 overflow-y-auto" [style.max-height]="showHistory() ? '600px' : '400px'">
+                    <div *ngIf="pastTrips().length === 0" class="p-5 text-center text-secondary opacity-50">
+                        No history yet
+                    </div>
+                    <div *ngFor="let trip of pastTrips()"
+                        class="trip-history-item p-3 border-bottom rounded-3 mb-2 hover-bg-light transition-all d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold text-navy truncate-1" style="max-width: 150px;">{{
+                                    trip.customerName }}</span>
+                                <span class="smaller text-secondary">{{ trip.startTime | date:'MMM d' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="smaller text-secondary">{{ trip.totalKm }} KM • ₹{{ trip.totalAmount
+                                    }}</span>
+                                <span class="status-indicator-sm"
+                                    [ngClass]="trip.paymentStatus === 'paid' ? 'bg-success' : 'bg-warning'"></span>
+                            </div>
+                        </div>
+                        <button (click)="viewTripDetail(trip)" class="btn btn-sm btn-navy-soft ms-3 rounded-circle">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
-                    <h4 class="fw-bold text-secondary mb-3">Trip History</h4>
-                    <button class="btn btn-outline-secondary btn-lg mx-auto rounded-pill px-5">View Past Trips</button>
+    </div>
+
+    <!-- TRIP DETAIL OVERLAY -->
+    <div *ngIf="showTripDetail()" class="modal-overlay animate-fade-in">
+        <div class="modal-content-premium p-4 shadow-lg border-0">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold text-navy mb-0">Trip Voucher Details</h4>
+                <button (click)="closeTripDetail()" class="btn-close-custom">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="row g-4 overflow-y-auto" style="max-height: 80vh;">
+                <div class="col-md-6">
+                    <div class="detail-group">
+                        <label class="form-label-premium">Customer</label>
+                        <div class="fw-bold text-navy fs-5">{{ selectedTrip()?.customerName }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="detail-group">
+                        <label class="form-label-premium">Trip Date</label>
+                        <div class="fw-bold text-navy">{{ selectedTrip()?.startTime | date:'mediumDate' }}</div>
+                        <div class="small text-secondary">{{ selectedTrip()?.startTime | date:'shortTime' }} - {{
+                            selectedTrip()?.endTime | date:'shortTime' }}</div>
+                    </div>
+                </div>
+
+                <div class="col-12 border-top pt-3">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <label class="form-label-premium">Vehicle</label>
+                            <div class="fw-bold text-navy">{{ selectedTrip()?.vehicleId?.licensePlate }}</div>
+                            <div class="smaller text-secondary">{{ selectedTrip()?.vehicleId?.make }} {{
+                                selectedTrip()?.vehicleId?.model }}</div>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label-premium">Total KM</label>
+                            <div class="fw-bold text-navy">{{ selectedTrip()?.totalKm }} KM</div>
+                            <div class="smaller text-secondary">{{ selectedTrip()?.startOdometer }} → {{
+                                selectedTrip()?.endOdometer }}</div>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label-premium">Payment</label>
+                            <div class="badge rounded-pill d-block"
+                                [ngClass]="selectedTrip()?.paymentStatus === 'paid' ? 'bg-success' : 'bg-warning'">
+                                {{ selectedTrip()?.paymentStatus | uppercase }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 bg-light p-4 rounded-4">
+                    <h6 class="fw-bold text-navy mb-3">Hire Charges Breakdown</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between border-bottom pb-1">
+                            <span class="text-secondary small">Minimum Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.minimumCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.extraKmCharges">
+                            <span class="text-secondary small">Extra KM Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.extraKmCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.extraHoursCharges">
+                            <span class="text-secondary small">Extra Hours Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.extraHoursCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.tollParking">
+                            <span class="text-secondary small">Toll & Parking</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.tollParking }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.nightCharges">
+                            <span class="text-secondary small">Night Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.nightCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.permitTax">
+                            <span class="text-secondary small">Permit Tax</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.permitTax }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom pb-1"
+                            *ngIf="selectedTrip()?.fuelCharges">
+                            <span class="text-secondary small">Fuel Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.fuelCharges }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2">
+                            <span class="fw-bold text-navy">TOTAL AMOUNT</span>
+                            <span class="fw-bold text-navy fs-5">₹{{ selectedTrip()?.totalAmount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-success">
+                            <span class="small fw-bold">Less Advance</span>
+                            <span class="fw-bold">- ₹{{ selectedTrip()?.advanceAmount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-info" *ngIf="selectedTrip()?.paidAmount">
+                            <span class="small fw-bold">Customer Paid</span>
+                            <span class="fw-bold">- ₹{{ selectedTrip()?.paidAmount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top border-2">
+                            <span class="fw-bold text-danger">BALANCE PAYABLE</span>
+                            <span class="fw-bold text-danger fs-4">₹{{ selectedTrip()?.balanceAmount }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12" *ngIf="selectedTrip()?.guestComments">
+                    <label class="form-label-premium">Guest Comments/Notes</label>
+                    <p class="fst-italic text-secondary bg-white p-3 rounded border">{{ selectedTrip()?.guestComments }}
+                    </p>
                 </div>
             </div>
         </div>

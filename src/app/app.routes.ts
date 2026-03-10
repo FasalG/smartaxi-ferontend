@@ -30,6 +30,7 @@ export const routes: Routes = [
       { path: 'dashboard', loadComponent: () => import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboard) },
       { path: 'vehicles', loadComponent: () => import('./features/admin/vehicles/vehicles').then(m => m.VehiclesComponent) },
       { path: 'trips', loadComponent: () => import('./features/admin/trips/trips').then(m => m.TripsComponent) },
+      { path: 'reports', loadComponent: () => import('./features/admin/reports/reports').then(m => m.ReportsComponent) },
       { path: 'maintenance', loadComponent: () => import('./features/admin/maintenance/maintenance').then(m => m.MaintenanceComponent) },
       { path: 'drivers', loadComponent: () => import('./features/admin/drivers/drivers').then(m => m.DriversComponent) }
     ]

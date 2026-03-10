@@ -10,6 +10,7 @@ export interface User {
     name: string;
     email: string;
     role: string;
+    tenantId?: string | any;
     companyDetails?: any;
 }
 
@@ -39,14 +40,37 @@ export class AuthService {
             body: credentials
         }).pipe(
             tap(response => {
-                console.log(response,'response')
-             
+                console.log(response, 'response')
+
                 this.setSession(response);
             }),
             catchError(error => {
                 return throwError(() => error);
             })
         );
+    }
+
+    getMe(): Observable<User> {
+        return this.api.HttpRequestHandler<User>({
+            method: HttpMethod.GET,
+            endpoint: Endpoints.AUTH.CURRENT_USER
+        }).pipe(
+            tap(user => {
+                const storedUser = this.getStoredUser();
+                if (storedUser) {
+                    const updatedUser = { ...storedUser, ...user };
+                    this.storage.setItem('zorta_user', updatedUser);
+                    this.currentUser.set(updatedUser);
+                }
+            })
+        );
+    }
+
+    getDrivers(): Observable<User[]> {
+        return this.api.HttpRequestHandler<User[]>({
+            method: HttpMethod.GET,
+            endpoint: Endpoints.AUTH.GET_DRIVERS
+        });
     }
 
     logout() {
