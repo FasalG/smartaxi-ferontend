@@ -5,7 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-admin-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
@@ -17,7 +17,7 @@ import { AuthService } from '../../../services/auth.service';
           <div class="col-md-5 d-none d-md-block" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); position: relative;">
             <div class="h-100 d-flex flex-column justify-content-center p-5 text-white">
               <h1 class="display-5 fw-bold mb-3">SmartTaxi</h1>
-              <p class="h5 fw-light text-white-50">Enterprise Taxi Management</p>
+              <p class="h5 fw-light text-white-50">Company Administration</p>
               
               <div class="mt-auto">
                 <p class="small text-white-50 mb-0">&copy; 2026 SmartTaxi Systems</p>
@@ -34,7 +34,7 @@ import { AuthService } from '../../../services/auth.service';
               
               <div class="text-center mb-5 d-md-none">
                 <h1 class="h3 fw-bold text-primary mb-1">SmartTaxi</h1>
-                <p class="text-secondary small">Taxi Management</p>
+                <p class="text-secondary small">Company Administration</p>
               </div>
 
               <div class="mb-4">
@@ -89,7 +89,7 @@ import { AuthService } from '../../../services/auth.service';
     }
   `]
 })
-export class LoginComponent {
+export class AdminLoginComponent {
   private formBuilder = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -107,16 +107,16 @@ export class LoginComponent {
 
   constructor() {
     // Redirect to home if already logged in
-    // if (this.authService.isAuthenticated()) {
-    //   const role = this.authService.currentUser()?.role;
-    //   if (role === 'superadmin') {
-    //     this.router.navigate(['/superadmin']);
-    //   } else if (role === 'driver') {
-    //     this.router.navigate(['/driver']);
-    //   } else {
-    //     this.router.navigate(['/admin']);
-    //   }
-    // }
+    if (this.authService.isAuthenticated()) {
+      const role = this.authService.currentUser()?.role;
+      if (role === 'superadmin') {
+        this.router.navigate(['/superadmin']);
+      } else if (role === 'driver') {
+        this.router.navigate(['/driver']);
+      } else {
+        this.router.navigate(['/admin']);
+      }
+    }
 
     // Get return url from route parameters or default to admin
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
@@ -144,7 +144,7 @@ export class LoginComponent {
       next: (response) => {
         const role = response.user?.role;
         if (role === 'superadmin') {
-          this.router.navigateByUrl('/superadmin').catch(err => console.error('Router error superadmin:', err));
+          this.router.navigateByUrl('/superadmin');
         } else if (role === 'admin') {
           this.router.navigateByUrl('/admin');
         } else if (role === 'driver') {

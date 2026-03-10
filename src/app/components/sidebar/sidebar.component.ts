@@ -97,17 +97,31 @@ export class SidebarComponent {
 
   @Output() menuClick = new EventEmitter<void>();
 
-  menuItems: MenuItem[] = [
-    { route: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-    { route: 'inventory', label: 'Rental Items', icon: 'Package' },
-    { route: 'categories', label: 'Categories', icon: 'LayoutDashboard' },
-    { route: 'bookings', label: 'Bookings', icon: 'Calendar' },
-    { route: 'bank-details', label: 'Bank Details', icon: 'Bank' },
-    { route: 'expenses', label: 'Bills & Expenses', icon: 'Receipt' },
-    { route: 'customers', label: 'Customers', icon: 'Users' },
-    { route: 'maintenance', label: 'Maintenance', icon: 'Wrench' },
-    // { route: 'analytics', label: 'Analytics', icon: 'BarChart3' },
-  ];
+  get menuItems(): MenuItem[] {
+    const role = this.authService.currentUser()?.role;
+
+    if (role === 'superadmin') {
+      return [
+        { route: 'superadmin', label: 'Dashboard', icon: 'LayoutDashboard' }
+      ];
+    } else if (role === 'driver') {
+      return [
+        { route: 'driver', label: 'Dashboard', icon: 'LayoutDashboard' }
+      ];
+    } else {
+      // Default / Admin menu
+      return [
+        { route: 'admin', label: 'Dashboard', icon: 'LayoutDashboard' },
+        { route: 'inventory', label: 'Rental Items', icon: 'Package' },
+        { route: 'categories', label: 'Categories', icon: 'LayoutDashboard' },
+        { route: 'bookings', label: 'Bookings', icon: 'Calendar' },
+        { route: 'bank-details', label: 'Bank Details', icon: 'Bank' },
+        { route: 'expenses', label: 'Bills & Expenses', icon: 'Receipt' },
+        { route: 'customers', label: 'Customers', icon: 'Users' },
+        { route: 'maintenance', label: 'Maintenance', icon: 'Wrench' }
+      ];
+    }
+  }
 
   onMenuClick() {
     this.menuClick.emit();

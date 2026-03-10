@@ -3,6 +3,7 @@ import { Observable, tap, catchError, throwError } from 'rxjs';
 import { ApiService } from '../core/services/api.service';
 import { Endpoints } from '../core/constants/endpoints';
 import { HttpMethod } from '../core/enums/httpmethod.enum';
+import { StorageService } from '../core/services/storage.service';
 
 export interface User {
     _id: string;
@@ -22,6 +23,8 @@ export interface AuthResponse {
 })
 export class AuthService {
     private api = inject(ApiService);
+
+    private storage = inject(StorageService);
 
     // Reactive state using Signals
     currentUser = signal<User | null>(this.getStoredUser());
@@ -45,30 +48,29 @@ export class AuthService {
     }
 
     logout() {
-        localStorage.removeItem('zorta_token');
-        localStorage.removeItem('zorta_user');
+        this.storage.removeItem('zorta_token');
+        this.storage.removeItem('zorta_user');
         this.currentUser.set(null);
         this.isAuthenticated.set(false);
         this.api.clearAllCache();
     }
 
     getToken(): string | null {
-        return localStorage.getItem('zorta_token');
+        return this.storage.getItem('zorta_token', false);
     }
 
     private setSession(authResult: AuthResponse) {
-        localStorage.setItem('zorta_token', authResult.token);
-        localStorage.setItem('zorta_user', JSON.stringify(authResult.user));
+        this.storage.setItem('zorta_token', authResult.token);
+        this.storage.setItem('zorta_user', authResult.user);
         this.currentUser.set(authResult.user);
         this.isAuthenticated.set(true);
     }
 
     private getStoredUser(): User | null {
-        const user = localStorage.getItem('zorta_user');
-        return user ? JSON.parse(user) : null;
+        return this.storage.getItem('zorta_user', true);
     }
 
     private hasToken(): boolean {
-        return !!localStorage.getItem('zorta_token');
+        return this.storage.hasItem('zorta_token');
     }
 }

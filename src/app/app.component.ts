@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthService } from './services/auth.service';
 
@@ -15,11 +15,11 @@ import { AuthService } from './services/auth.service';
   template: `
     <div class="d-flex overflow-hidden" style="height: 100vh;">
       <!-- Desktop Sidebar -->
-      <app-sidebar *ngIf="authService.isAuthenticated()" class="h-100 d-none d-lg-block"></app-sidebar>
+      <app-sidebar *ngIf="showSidebar" class="h-100 d-none d-lg-block"></app-sidebar>
 
-      <main class="flex-grow-1 overflow-auto d-flex flex-column" [style.background-color]="authService.isAuthenticated() ? 'var(--background)' : 'transparent'">
+      <main class="flex-grow-1 overflow-auto d-flex flex-column" [style.background-color]="showSidebar ? 'var(--background)' : 'transparent'">
         <!-- Mobile Header -->
-        <div *ngIf="authService.isAuthenticated()" class="d-lg-none d-flex justify-content-between align-items-center p-3 shadow-sm" style="background-color: var(--sidebar-primary); color: var(--sidebar-primary-foreground);">
+        <div *ngIf="showSidebar" class="d-lg-none d-flex justify-content-between align-items-center p-3 shadow-sm" style="background-color: var(--sidebar-primary); color: var(--sidebar-primary-foreground);">
           <div class="d-flex align-items-center gap-2">
             <h1 class="h5 mb-0 fw-bold">Rental ERP</h1>
           </div>
@@ -31,21 +31,21 @@ import { AuthService } from './services/auth.service';
         </div>
 
         <!-- Mobile Sidebar Overlay -->
-        <div *ngIf="authService.isAuthenticated() && isSidebarOpen" 
+        <div *ngIf="showSidebar && isSidebarOpen" 
              class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" 
              style="z-index: 1040; transition: opacity 0.3s;"
              (click)="toggleSidebar()">
         </div>
 
         <!-- Mobile Offcanvas Sidebar -->
-        <div *ngIf="authService.isAuthenticated()" class="position-fixed top-0 start-0 h-100 shadow mobile-sidebar" 
+        <div *ngIf="showSidebar" class="position-fixed top-0 start-0 h-100 shadow mobile-sidebar" 
              [class.open]="isSidebarOpen"
              style="z-index: 1045; width: 280px; transform: translateX(-100%); transition: transform 0.3s ease-in-out;">
           <app-sidebar class="h-100 d-block" (menuClick)="closeSidebar()"></app-sidebar>
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-grow-1" [class.container-fluid]="authService.isAuthenticated()" [class.py-4]="authService.isAuthenticated()" [class.p-md-5]="authService.isAuthenticated()">
+        <div class="flex-grow-1" [class.container-fluid]="showSidebar" [class.py-4]="showSidebar" [class.p-md-5]="showSidebar">
           <router-outlet></router-outlet>
         </div>
       </main>
@@ -61,6 +61,11 @@ export class AppComponent {
   title = 'zorta-erp';
   isSidebarOpen = false;
   authService = inject(AuthService);
+  router = inject(Router);
+
+  get showSidebar(): boolean {
+    return this.authService.isAuthenticated() && !this.router.url.includes('login');
+  }
 
   toggleSidebar() {
     this.isSidebarOpen = !this.isSidebarOpen;
