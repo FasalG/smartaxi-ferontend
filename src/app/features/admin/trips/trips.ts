@@ -42,7 +42,7 @@ export class TripsComponent {
         driverId: ['', Validators.required],
         vehicleId: ['', Validators.required],
         customerName: ['', Validators.required],
-        visitingPlaces: [''],
+        visitingPlaces: ['', Validators.required],
         startLocation: ['', Validators.required],
         endLocation: [''],
         startOdometer: [0],
@@ -58,6 +58,8 @@ export class TripsComponent {
         advanceAmount: [0],
         totalAmount: [0],
         balanceAmount: [0],
+        startTime: ['', Validators.required],
+        endTime: [''],
         status: ['in-progress', Validators.required],
         paymentStatus: ['pending']
     });
@@ -123,8 +125,18 @@ export class TripsComponent {
         this.isEditing = false;
         this.editingId.set(null);
         if (!this.isCreating) {
-            this.tripForm.reset({ status: 'in-progress', totalAmount: 0 });
+            this.tripForm.reset({
+                status: 'in-progress',
+                totalAmount: 0,
+                startTime: this.formatDateForInput(new Date())
+            });
         }
+    }
+
+    formatDateForInput(date: string | Date): string {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toISOString().slice(0, 16); // format: yyyy-MM-ddTHH:mm
     }
 
     editTrip(trip: any) {
@@ -151,6 +163,8 @@ export class TripsComponent {
             advanceAmount: trip.advanceAmount,
             totalAmount: trip.totalAmount,
             balanceAmount: trip.balanceAmount,
+            startTime: this.formatDateForInput(trip.startTime),
+            endTime: this.formatDateForInput(trip.endTime),
             status: trip.status,
             paymentStatus: trip.paymentStatus
         });
@@ -168,6 +182,31 @@ export class TripsComponent {
     onSubmit() {
         if (this.tripForm.invalid) {
             this.tripForm.markAllAsTouched();
+            return;
+        }
+
+        const { vehicleId, startTime, endTime } = this.tripForm.value as any;
+        const start = new Date(startTime).getTime();
+        const end = endTime ? new Date(endTime).getTime() : Infinity;
+
+        // Conflict Detection
+        const hasConflict = this.trips().some(trip => {
+            // Skip the trip being edited
+            if (this.isEditing && trip._id === this.editingId()) return false;
+
+            // Only check for the selected vehicle
+            if (trip.vehicleId?._id !== vehicleId && trip.vehicleId !== vehicleId) return false;
+
+            const tStart = new Date(trip.startTime).getTime();
+            const tEnd = trip.endTime ? new Date(trip.endTime).getTime() : Infinity;
+
+            // Check for overlap
+            // (StartA <= EndB) and (EndA >= StartB)
+            return (start < tEnd) && (end > tStart);
+        });
+
+        if (hasConflict) {
+            alert('CRITICAL: This vehicle is already booked for the selected time range. Please choose another vehicle or time.');
             return;
         }
 

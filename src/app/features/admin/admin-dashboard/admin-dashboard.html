@@ -67,4 +67,90 @@
             </div>
         </div>
     </div>
+
+    <!-- Quick Vehicle Availability Checker -->
+    <div class="row g-4 mt-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                        style="width: 48px; height: 48px;">
+                        <svg width="24" height="24" class="text-primary" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Quick Fleet Availability Checker</h5>
+                        <p class="small text-secondary mb-0">Verify if a vehicle is free for a specific time slot to
+                            avoid double bookings.</p>
+                    </div>
+                </div>
+
+                <form [formGroup]="checkerForm" (ngSubmit)="checkAvailability()" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Select Vehicle</label>
+                        <select class="form-select border-0 bg-light" formControlName="vehicleId">
+                            <option value="">Choose Vehicle...</option>
+                            <option *ngFor="let v of vehicles()" [value]="v._id">{{ v.make }} {{ v.model }} - {{
+                                v.licensePlate }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Check From</label>
+                        <input type="datetime-local" class="form-control border-0 bg-light" formControlName="startTime">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Check To</label>
+                        <input type="datetime-local" class="form-control border-0 bg-light" formControlName="endTime">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm"
+                            [disabled]="checkerForm.invalid">
+                            Check Status
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Results Section -->
+                <div class="mt-4" *ngIf="availabilityStatus()">
+                    <div *ngIf="availabilityStatus() === 'available'"
+                        class="alert alert-success d-flex align-items-center gap-3 p-3 rounded-3 border-0 shadow-sm">
+                        <div class="rounded-circle bg-success bg-opacity-20 p-2">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                class="text-success">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7">
+                                </path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-success">Vehicle is AVAILABLE!</div>
+                            <div class="small text-success text-opacity-75">No conflicting bookings found for this time
+                                range.</div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="availabilityStatus() === 'unavailable'"
+                        class="alert alert-danger d-flex align-items-center gap-3 p-3 rounded-3 border-0 shadow-sm">
+                        <div class="rounded-circle bg-danger bg-opacity-20 p-2">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                class="text-danger">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                </path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-danger">Vehicle is UNAVAILABLE</div>
+                            <div class="small text-danger text-opacity-75">Already booked for: <strong>{{
+                                    conflictingTrip()?.customerName }}</strong>
+                                (Starts: {{ conflictingTrip()?.startTime | date:'MMM d, HH:mm' }})</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

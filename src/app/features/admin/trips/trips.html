@@ -53,7 +53,7 @@
                                 <th class="ps-4 py-3 small text-secondary fw-bold text-uppercase">#</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Vehicle/Driver</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Customer/Route</th>
-                                <th class="py-3 small text-secondary fw-bold text-uppercase">Start Time</th>
+                                <th class="py-3 small text-secondary fw-bold text-uppercase">Start/End Time</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Status</th>
                                 <th class="py-3 small text-secondary fw-bold text-uppercase">Total Amount</th>
                                 <th class="text-end px-4 py-3 small text-secondary fw-bold text-uppercase">Actions</th>
@@ -72,7 +72,14 @@
                                     <div class="small text-secondary">{{ trip.startLocation }} → {{ trip.endLocation ||
                                         'TBD' }}</div>
                                 </td>
-                                <td>{{ trip.startTime | date:'short' }}</td>
+                                <td>
+                                    <div class="small fw-bold">{{ trip.startTime | date:'MMM d, HH:mm' }}</div>
+                                    <div class="small text-secondary" *ngIf="trip.endTime">→ {{ trip.endTime | date:'MMM
+                                        d, HH:mm' }}</div>
+                                    <div class="badge bg-light text-dark border small mt-1" *ngIf="trip.totalHours">
+                                        {{ trip.totalHours }} hrs / {{ trip.totalDays }} days
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="badge rounded-pill"
                                         [ngClass]="{'bg-primary': trip.status === 'in-progress', 'bg-success': trip.status === 'completed', 'bg-danger': trip.status === 'cancelled'}">
@@ -159,7 +166,24 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-secondary">Customer Name</label>
                         <input type="text" class="form-control" formControlName="customerName"
-                            placeholder="Customer Name">
+                            placeholder="Customer Name"
+                            [ngClass]="{'is-invalid': f['customerName'].touched && f['customerName'].errors}">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold text-secondary">Visiting Places</label>
+                        <input type="text" class="form-control" formControlName="visitingPlaces"
+                            placeholder="e.g. Airport, Hotel, City Tour"
+                            [ngClass]="{'is-invalid': f['visitingPlaces'].touched && f['visitingPlaces'].errors}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Trip Start (From)</label>
+                        <input type="datetime-local" class="form-control" formControlName="startTime"
+                            [ngClass]="{'is-invalid': f['startTime'].touched && f['startTime'].errors}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Trip End (To / Optional)</label>
+                        <input type="datetime-local" class="form-control" formControlName="endTime">
                     </div>
 
                     <div class="col-md-6">
