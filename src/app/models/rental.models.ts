@@ -12,6 +12,8 @@ export interface Customer {
     phone: string;
     email?: string;
     address?: string;
+    isEligibleForCredit?: boolean;
+    creditPeriodDays?: number;
     tenantId?: any;
     createdAt?: string;
     updatedAt?: string;
@@ -152,6 +154,7 @@ export interface Vehicle {
     licensePlate: string;
     color: string;
     status: 'active' | 'maintenance' | 'inactive';
+    driverPaymentPercentage?: number;
 }
 
 export interface Trip {
@@ -165,20 +168,13 @@ export interface Trip {
     endLocation?: string;
     customerId?: any;
     customerName: string;
-    visitingPlaces: string;
     tripType: 'Cash' | 'Credit';
-    acType: 'A/C' | 'Non A/C';
     startOdometer: number;
     endOdometer?: number;
     totalKm?: number;
     totalDays?: number;
     totalHours?: number;
-    minimumCharges?: number;
-    extraKmCharges?: number;
-    extraHoursCharges?: number;
     tollParking?: number;
-    permitTax?: number;
-    nightCharges?: number;
     fuelCharges?: number;
     driverBata?: number;
     otherExpenses?: number;
@@ -190,8 +186,12 @@ export interface Trip {
     driverSettlementAmount?: number;
     driverEarnings?: number;
     guestComments?: string;
-    status: 'in-progress' | 'completed' | 'cancelled';
+    status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
     paymentStatus: 'pending' | 'paid';
+    driverPaymentStatus?: 'pending' | 'submitted' | 'confirmed';
+    driverSettlementMethod?: 'cash' | 'balance' | 'none';
+    driverPaymentSubmittedAt?: string;
+    adminConfirmedAt?: string;
     notes?: string;
     createdAt?: string;
     updatedAt?: string;

@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://zorta-backend.onrender.com/api'
+    apiUrl: 'https://smartaxi-backend.onrender.com/api'
 };

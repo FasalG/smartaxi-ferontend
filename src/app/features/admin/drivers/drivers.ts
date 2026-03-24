@@ -7,11 +7,13 @@ import { HttpMethod } from '../../../core/enums/httpmethod.enum';
 import { AuthService } from '../../../services/auth.service';
 import { Router } from '@angular/router';
 import { ExcelService } from '../../../services/excel.service';
+import { ViewChild } from '@angular/core';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog';
 
 @Component({
     selector: 'app-drivers',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule],
+    imports: [CommonModule, ReactiveFormsModule, ConfirmDialogComponent],
     templateUrl: './drivers.html',
 })
 export class DriversComponent {
@@ -21,22 +23,35 @@ export class DriversComponent {
     private router = inject(Router);
     private excelService = inject(ExcelService);
 
+    @ViewChild('confirmDialog') confirmDialog!: ConfirmDialogComponent;
+
     drivers = signal<any[]>([]);
     isCreating = false;
     isEditing = false;
     editingId = signal<string | null>(null);
     loading = false;
+    searchQuery = signal<string>('');
 
     // Pagination
     page = signal<number>(1);
     pageSize = signal<number>(10);
 
-    paginatedDrivers = computed(() => {
-        const startIndex = (this.page() - 1) * this.pageSize();
-        return this.drivers().slice(startIndex, startIndex + this.pageSize());
+    filteredDrivers = computed(() => {
+        const query = this.searchQuery().toLowerCase().trim();
+        const all = this.drivers();
+        if (!query) return all;
+        return all.filter(d =>
+            d.name?.toLowerCase().includes(query) ||
+            d.email?.toLowerCase().includes(query)
+        );
     });
 
-    totalPages = computed(() => Math.ceil(this.drivers().length / this.pageSize()));
+    paginatedDrivers = computed(() => {
+        const startIndex = (this.page() - 1) * this.pageSize();
+        return this.filteredDrivers().slice(startIndex, startIndex + this.pageSize());
+    });
+
+    totalPages = computed(() => Math.ceil(this.filteredDrivers().length / this.pageSize()));
 
     driverForm = this.formBuilder.group({
         name: ['', Validators.required],
@@ -109,8 +124,14 @@ export class DriversComponent {
         });
     }
 
-    deleteDriver(id: string) {
-        if (confirm('Are you sure you want to delete this driver?')) {
+    async deleteDriver(id: string) {
+        this.confirmDialog.title = 'Delete Driver';
+        this.confirmDialog.message = 'Are you sure you want to delete this driver? All driver credentials will be revoked.';
+        this.confirmDialog.confirmText = 'Delete';
+        this.confirmDialog.type = 'danger';
+
+        const confirmed = await this.confirmDialog.open();
+        if (confirmed) {
             this.apiService.HttpRequestHandler({
                 method: HttpMethod.DELETE,
                 endpoint: `/auth/${id}`

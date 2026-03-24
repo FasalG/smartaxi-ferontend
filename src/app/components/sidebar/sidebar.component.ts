@@ -149,9 +149,10 @@ export class SidebarComponent implements OnInit {
         { route: 'admin/vehicles', label: 'Vehicles', icon: 'Car' },
         { route: 'admin/trips', label: 'Trips', icon: 'MapPin' },
         { route: 'admin/reports', label: 'Reports', icon: 'BarChart3' },
-        { route: 'admin/analytics', label: 'Analytics Engine', icon: 'Activity' },
+        // { route: 'admin/analytics', label: 'Analytics Engine', icon: 'Activity' },
+        { route: 'admin/receivables', label: 'Receivables', icon: 'Bank' },
         { route: 'admin/customers', label: 'Customers', icon: 'Users' },
-        { route: 'admin/maintenance', label: 'Maintenance', icon: 'Wrench' },
+        // { route: 'admin/maintenance', label: 'Maintenance', icon: 'Wrench' },
         { route: 'admin/drivers', label: 'Drivers', icon: 'Users' }
       ];
     }

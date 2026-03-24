@@ -4,6 +4,18 @@
             <h2 class="fw-bold mb-0">Vehicle Fleet</h2>
             <p class="text-secondary small mb-0">Manage your taxi fleet and availability.</p>
         </div>
+        <div class="flex-grow-1 mx-md-4 max-w-400">
+            <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border">
+                <span class="input-group-text bg-white border-0 ps-3">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </span>
+                <input type="text" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)"
+                    class="form-control border-0 py-2 ms-n1" placeholder="Search by Plate, Make or Model...">
+            </div>
+        </div>
         <div class="d-flex gap-2 align-items-center">
             <button (click)="exportVehicles()" class="btn btn-sm btn-outline-success d-flex align-items-center gap-2"
                 title="Export Excel">
@@ -139,10 +151,23 @@
                         <input type="text" class="form-control" formControlName="model" placeholder="e.g. Camry"
                             [ngClass]="{'is-invalid': f['model'].touched && f['model'].errors}">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold text-secondary">License Plate</label>
-                        <input type="text" class="form-control" formControlName="licensePlate" placeholder="ABC-1234"
-                            [ngClass]="{'is-invalid': f['licensePlate'].touched && f['licensePlate'].errors}">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-secondary">License Plate (e.g. KL 65 D 3454)</label>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control text-center text-uppercase fw-bold"
+                                style="width: 50px;" maxlength="3" placeholder="KL" [value]="plateCells[0]()"
+                                (input)="onPlateCellInput(0, $event)">
+                            <input type="text" class="form-control text-center text-uppercase fw-bold"
+                                style="width: 50px;" maxlength="2" placeholder="65" [value]="plateCells[1]()"
+                                (input)="onPlateCellInput(1, $event)">
+                            <input type="text" class="form-control text-center text-uppercase fw-bold"
+                                style="width: 40px;" maxlength="2" placeholder="D" [value]="plateCells[2]()"
+                                (input)="onPlateCellInput(2, $event)">
+                            <input type="text" class="form-control text-center text-uppercase fw-bold flex-grow-1"
+                                maxlength="4" placeholder="3454" [value]="plateCells[3]()"
+                                (input)="onPlateCellInput(3, $event)">
+                        </div>
+                        <input type="hidden" formControlName="licensePlate">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-secondary">Year</label>
@@ -162,6 +187,14 @@
                             <option value="inactive">Inactive</option>
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Driver Payment %</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" formControlName="driverPaymentPercentage"
+                                [ngClass]="{'is-invalid': f['driverPaymentPercentage'].touched && f['driverPaymentPercentage'].errors}">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
@@ -177,4 +210,5 @@
             </form>
         </div>
     </div>
+    <app-confirm-dialog #confirmDialog></app-confirm-dialog>
 </div>

@@ -63,7 +63,6 @@ export class AnalyticsComponent implements OnInit {
             fuel: 0,
             toll: 0,
             bata: 0,
-            permit: 0,
             other: 0,
             total: 0
         };
@@ -103,7 +102,6 @@ export class AnalyticsComponent implements OnInit {
             expenses.fuel += Number(trip.fuelCharges) || 0;
             expenses.toll += Number(trip.tollParking) || 0;
             expenses.bata += Number(trip.driverBata) || 0;
-            expenses.permit += Number(trip.permitTax) || 0;
             expenses.other += Number(trip.otherExpenses) || 0;
 
             // 4. Driver Stats
@@ -123,7 +121,7 @@ export class AnalyticsComponent implements OnInit {
                 driverStats[trip.driverId._id].tripCount += 1;
                 driverStats[trip.driverId._id].revenueBrought += Number(trip.totalAmount) || 0;
 
-                const tripExpenses = (Number(trip.fuelCharges) || 0) + (Number(trip.tollParking) || 0) + (Number(trip.permitTax) || 0) + (Number(trip.driverBata) || 0) + (Number(trip.otherExpenses) || 0);
+                const tripExpenses = (Number(trip.fuelCharges) || 0) + (Number(trip.tollParking) || 0) + (Number(trip.driverBata) || 0) + (Number(trip.otherExpenses) || 0);
                 driverStats[trip.driverId._id].expensesIncurred += tripExpenses;
 
                 driverStats[trip.driverId._id].advanceCollected += ((Number(trip.advanceAmount) || 0) + (Number(trip.paidAmount) || 0));
@@ -131,7 +129,7 @@ export class AnalyticsComponent implements OnInit {
             }
         });
 
-        expenses.total = expenses.fuel + expenses.toll + expenses.bata + expenses.permit + expenses.other;
+        expenses.total = expenses.fuel + expenses.toll + expenses.bata + expenses.other;
 
         const creditorsList = Object.values(customerDues).filter(c => c.totalDue > 0).sort((a, b) => b.totalDue - a.totalDue);
         const driverDataList = Object.values(driverStats).sort((a, b) => b.tripCount - a.tripCount);

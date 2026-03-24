@@ -2,15 +2,18 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TripService } from '../../../services/trip.service';
 import { VehicleService } from '../../../services/vehicle.service';
+import { CustomerService } from '../../../services/customer.service';
 import { AuthService } from '../../../services/auth.service';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ExcelService } from '../../../services/excel.service';
+import { ViewChild } from '@angular/core';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog';
 
 @Component({
     selector: 'app-reports',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, ConfirmDialogComponent],
     templateUrl: './reports.html',
     styleUrl: './reports.scss'
 })
@@ -18,12 +21,16 @@ export class ReportsComponent implements OnInit {
     private tripService = inject(TripService);
     private authService = inject(AuthService);
     private vehicleService = inject(VehicleService);
+    private customerService = inject(CustomerService);
     private route = inject(ActivatedRoute);
     private excelService = inject(ExcelService);
+
+    @ViewChild('confirmDialog') confirmDialog!: ConfirmDialogComponent;
 
     trips = signal<any[]>([]);
     drivers = signal<any[]>([]);
     vehicles = signal<any[]>([]);
+    customers = signal<any[]>([]);
 
     // Detail View
     selectedTrip = signal<any | null>(null);
@@ -37,6 +44,7 @@ export class ReportsComponent implements OnInit {
     // Filters
     filterDriverId = signal<string>('');
     filterVehicleId = signal<string>('');
+    filterCustomerId = signal<string>('');
     filterStartDate = signal<string>('');
     filterEndDate = signal<string>('');
 
@@ -49,6 +57,10 @@ export class ReportsComponent implements OnInit {
 
         if (this.filterVehicleId()) {
             list = list.filter(t => (t.vehicleId?._id || t.vehicleId) === this.filterVehicleId());
+        }
+
+        if (this.filterCustomerId()) {
+            list = list.filter(t => (t.customerId?._id || t.customerId) === this.filterCustomerId());
         }
 
         if (this.filterStartDate()) {
@@ -96,11 +108,13 @@ export class ReportsComponent implements OnInit {
         this.tripService.getTrips().subscribe(res => this.trips.set(res || []));
         this.authService.getDrivers().subscribe(res => this.drivers.set(res || []));
         this.vehicleService.getVehicles().subscribe(res => this.vehicles.set(res || []));
+        this.customerService.getAll().subscribe(res => this.customers.set(res || []));
     }
 
     resetFilters() {
         this.filterDriverId.set('');
         this.filterVehicleId.set('');
+        this.filterCustomerId.set('');
         this.filterStartDate.set('');
         this.filterEndDate.set('');
     }
@@ -115,23 +129,47 @@ export class ReportsComponent implements OnInit {
         this.selectedTrip.set(null);
     }
 
-    approveTrip(trip: any) {
-        if (!confirm('Are you sure you want to approve this trip and mark as full paid?')) return;
+    async confirmDriverPayment(trip: any) {
+        const isRefund = (trip.driverSettlementAmount || 0) < 0;
+        const amount = Math.abs(trip.driverSettlementAmount || 0);
 
-        this.approving.set(true);
-        const updateData = {
-            paymentStatus: 'paid' as any,
-            paidAmount: trip.totalAmount - trip.advanceAmount // Mark full balance as paid
-        };
+        this.confirmDialog.title = isRefund ? 'Confirm Cash Refund' : 'Confirm Cash Receipt';
+        this.confirmDialog.message = isRefund
+            ? `Confirm you have given a cash refund of ₹${amount} to the driver? This will complete the settlement.`
+            : `Confirm you have received the cash settlement of ₹${amount} from the driver? This will fully close the trip.`;
+        this.confirmDialog.confirmText = isRefund ? 'Confirm Refund Given' : 'Confirm Receipt';
+        this.confirmDialog.type = 'info';
 
-        this.tripService.updateTrip(trip._id, updateData).subscribe({
-            next: (res) => {
-                this.approving.set(false);
-                this.fetchData(); // Refresh list
-                this.closeTripDetail();
-            },
-            error: () => this.approving.set(false)
-        });
+        const confirmed = await this.confirmDialog.open();
+        if (confirmed) {
+            this.approving.set(true);
+            const updateData: any = {
+                driverPaymentStatus: 'confirmed',
+                adminConfirmedAt: new Date().toISOString()
+            };
+
+            // ONLY for Cash trips, finalize customer payment during driver confirmation
+            if (trip.tripType !== 'Credit') {
+                updateData.paymentStatus = 'paid';
+                if (trip.paymentStatus === 'pending') {
+                    updateData.paidAmount = (trip.totalAmount || 0) - (trip.advanceAmount || 0);
+                    updateData.balanceAmount = 0;
+                }
+            }
+
+            this.tripService.updateTrip(trip._id, updateData).subscribe({
+                next: () => {
+                    this.approving.set(false);
+                    this.fetchData();
+                    this.closeTripDetail();
+                },
+                error: () => this.approving.set(false)
+            });
+        }
+    }
+
+    mathAbs(n: number): number {
+        return Math.abs(n || 0);
     }
 
     printReport() {
@@ -147,8 +185,6 @@ export class ReportsComponent implements OnInit {
         if (file) {
             this.excelService.importFromExcel(file).then((data) => {
                 data.forEach((trip: any) => {
-                    // Logic to import trips from Excel if needed
-                    // For reports, this might just be data verification or bulk entry
                     console.log('Imported Trip Data:', trip);
                 });
             }).catch(err => console.error('Error importing Excel:', err));

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthService } from './services/auth.service';
+import { NotificationsComponent } from './components/notifications/notifications';
 
 @Component({
   selector: 'app-root',
@@ -10,14 +11,19 @@ import { AuthService } from './services/auth.service';
   imports: [
     CommonModule,
     RouterModule,
-    SidebarComponent
+    SidebarComponent,
+    NotificationsComponent
   ],
   template: `
     <div class="d-flex overflow-hidden" style="height: 100vh;">
       <!-- Desktop Sidebar -->
       <app-sidebar *ngIf="showSidebar" class="h-100 d-none d-lg-block"></app-sidebar>
 
-      <main class="flex-grow-1 overflow-auto d-flex flex-column" [style.background-color]="showSidebar ? 'var(--background)' : 'transparent'">
+      <main class="flex-grow-1 overflow-auto d-flex flex-column position-relative" [style.background-color]="showSidebar ? 'var(--background)' : 'transparent'">
+        
+        <!-- Global Notifications Bell -->
+        <app-notifications *ngIf="showSidebar"></app-notifications>
+        
         <!-- Mobile Header -->
         <div *ngIf="showSidebar" class="d-lg-none d-flex justify-content-between align-items-center p-3 shadow-sm" style="background-color: var(--sidebar-primary); color: var(--sidebar-primary-foreground);">
           <div class="d-flex align-items-center gap-2">

@@ -50,9 +50,9 @@
                         <tbody>
                             <tr *ngFor="let trip of entityTrips()" class="hover-bg-light transition-all">
                                 <td class="py-3 px-4">
-                                    <div class="fw-bold text-navy">{{ trip.startTime | date:'MMM d, y' }}</div>
-                                    <div class="small text-secondary truncate-1" style="max-width: 250px;">{{
-                                        trip.visitingPlaces }}</div>
+                                    <div class="small fw-bold">{{ trip.customerName }}</div>
+                                    <div class="small text-secondary text-truncate" style="max-width: 150px;">{{
+                                        trip.startLocation }}</div>
                                 </td>
                                 <td class="py-3 px-4">
                                     <div class="fw-bold text-navy small">{{ trip.vehicleId?.licensePlate }}</div>
@@ -234,15 +234,6 @@
                             <h5 class="fw-bold mb-0">₹{{ analytics().expenses.bata | number }}</h5>
                         </div>
 
-                        <!-- Permit -->
-                        <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
-                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">📜</div>
-                            <div class="flex-grow-1">
-                                <span class="fw-bold text-navy d-block">Permit Tax</span>
-                                <span class="text-secondary small">Inter-state crossing</span>
-                            </div>
-                            <h5 class="fw-bold mb-0">₹{{ analytics().expenses.permit | number }}</h5>
-                        </div>
 
                         <!-- Other -->
                         <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
