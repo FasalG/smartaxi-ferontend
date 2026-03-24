@@ -1,0 +1,321 @@
+<div class="admin-dashboard p-4 min-vh-100 bg-light">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-navy mb-1">Financial & Analytics Center</h2>
+            <p class="text-secondary small mb-0">Deep dive into operations, revenue, and driver settlements.</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-navy rounded-pill bg-white fw-bold px-4" (click)="ngOnInit()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Data
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="loading()" class="text-center p-5">
+        <div class="spinner-border text-navy" style="width: 3rem; height: 3rem;" role="status"></div>
+        <p class="mt-3 fw-bold text-navy">Loading Analytics Engine...</p>
+    </div>
+
+    <div *ngIf="!loading()" class="animate-fade-in">
+
+        <!-- 0. Detailed Breakdown View (Conditional Overlay) -->
+        <div *ngIf="selectedType()" class="card border-0 shadow-lg mb-5 rounded-4 overflow-hidden border-top border-4"
+            [ngClass]="selectedType() === 'driver' ? 'border-primary' : 'border-warning'">
+            <div class="card-header bg-white p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge mb-2 px-3 py-2 rounded-pill"
+                        [ngClass]="selectedType() === 'driver' ? 'bg-primary-soft text-primary' : 'bg-warning-soft text-warning'">
+                        Log History for {{ selectedType() === 'driver' ? 'Driver' : 'Customer' }}
+                    </span>
+                    <h3 class="fw-bold text-navy mb-0">{{ selectedEntityName() }}</h3>
+                </div>
+                <button (click)="closeDetails()" class="btn btn-navy rounded-pill px-4 shadow-sm fw-bold">
+                    Close History View &times;
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="py-3 px-4 text-secondary small fw-bold">Date & Route</th>
+                                <th class="py-3 px-4 text-secondary small fw-bold">Vehicle</th>
+                                <th class="py-3 px-4 text-secondary small fw-bold text-center">Distance</th>
+                                <th class="py-3 px-4 text-secondary small fw-bold text-end">Billed Amount</th>
+                                <th class="py-3 px-4 text-secondary small fw-bold text-end">Collected</th>
+                                <th class="py-3 px-4 text-secondary small fw-bold text-end">Settlement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let trip of entityTrips()" class="hover-bg-light transition-all">
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-navy">{{ trip.startTime | date:'MMM d, y' }}</div>
+                                    <div class="small text-secondary truncate-1" style="max-width: 250px;">{{
+                                        trip.visitingPlaces }}</div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-navy small">{{ trip.vehicleId?.licensePlate }}</div>
+                                    <div class="smaller text-secondary">{{ trip.vehicleId?.make }} {{
+                                        trip.vehicleId?.model }}</div>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="badge bg-light text-navy border px-2 py-1">{{ trip.totalKm }} KM</span>
+                                </td>
+                                <td class="py-3 px-4 text-end fw-bold text-navy">
+                                    ₹{{ trip.totalAmount | number }}
+                                </td>
+                                <td class="py-3 px-4 text-end fw-bold text-success">
+                                    ₹{{ parseNum(trip?.advanceAmount) + parseNum(trip?.paidAmount) | number }}
+                                </td>
+                                <td class="py-3 px-4 text-end">
+                                    <span class="badge rounded-pill px-3 py-2 fs-7"
+                                        [ngClass]="parseNum(trip?.driverSettlementAmount) > 0 ? 'bg-success-soft text-success' : (parseNum(trip?.driverSettlementAmount) < 0 ? 'bg-danger-soft text-danger' : 'bg-light text-secondary')">
+                                        {{ parseNum(trip?.driverSettlementAmount) > 0 ? '+' : '' }}{{
+                                        trip?.driverSettlementAmount | number }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="entityTrips().length === 0">
+                                <td colspan="6" class="text-center py-5 text-secondary">No trip logs found for this
+                                    entity.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. Executive Summary -->
+        <h5 class="fw-bold text-navy mb-3">EXECUTIVE SUMMARY</h5>
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center hover-scale transition-all">
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-secondary small fw-bold mb-1 uppercase tracking-widest">Gross Revenue</p>
+                    <h3 class="fw-bold text-primary mb-0">₹{{ analytics().overview.totalRevenue | number }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center hover-scale transition-all">
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning p-3">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-secondary small fw-bold mb-1 uppercase tracking-widest">Total Receivables</p>
+                    <h3 class="fw-bold text-warning mb-0">₹{{ analytics().overview.totalReceivables | number }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center hover-scale transition-all">
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="rounded-circle bg-success bg-opacity-10 text-success p-3">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-secondary small fw-bold mb-1 uppercase tracking-widest">Completed Trips</p>
+                    <h3 class="fw-bold text-success mb-0">{{ analytics().overview.completedTrips | number }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center hover-scale transition-all">
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="rounded-circle bg-danger bg-opacity-10 text-danger p-3">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-secondary small fw-bold mb-1 uppercase tracking-widest">Total Ops Expense</p>
+                    <h3 class="fw-bold text-danger mb-0">₹{{ analytics().expenses.total | number }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Creditors & Debt List -->
+        <h5 class="fw-bold text-navy mb-3 mt-4">CUSTOMER RECEIVABLES (CREDITORS LEDGER)</h5>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="py-3 px-4 text-secondary small fw-bold">Customer Name</th>
+                            <th class="py-3 px-4 text-secondary small fw-bold text-center">Open Trips</th>
+                            <th class="py-3 px-4 text-secondary small fw-bold text-end">Total Billed</th>
+                            <th class="py-3 px-4 text-secondary small fw-bold text-end">Total Outstanding</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngIf="analytics().creditorsList.length === 0">
+                            <td colspan="4" class="text-center py-5 text-secondary">
+                                <span class="fs-1 d-block mb-2">🎉</span>
+                                No outstanding debts from customers!
+                            </td>
+                        </tr>
+                        <tr *ngFor="let cred of analytics().creditorsList"
+                            class="hover-bg-light transition-all cursor-pointer"
+                            (click)="viewCustomerDetails(cred.name)">
+                            <td class="py-3 px-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center"
+                                        style="width: 40px; height: 40px;">
+                                        <span class="fw-bold">{{ cred.name.charAt(0).toUpperCase() }}</span>
+                                    </div>
+                                    <span class="fw-bold text-navy">{{ cred.name }}</span>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 text-center">
+                                <span class="badge bg-secondary rounded-pill">{{ cred.tripCount }} Trips</span>
+                            </td>
+                            <td class="py-3 px-4 text-end text-muted fw-bold">
+                                ₹{{ cred.totalBilled | number }}
+                            </td>
+                            <td class="py-3 px-4 text-end">
+                                <span class="fw-bold text-danger fs-5">₹{{ cred.totalDue | number }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- 3. Expenses Breakdown -->
+            <div class="col-lg-5">
+                <h5 class="fw-bold text-navy mb-3">DETAILED OPEX BREAKDOWN</h5>
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <p class="text-secondary small mb-4">A complete breakdown of all operational expenses associated
+                        with completed trips.</p>
+
+                    <div class="d-flex flex-column gap-3">
+                        <!-- Fuel -->
+                        <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                            <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-3">⛽</div>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold text-navy d-block">Fuel Charges</span>
+                                <span class="text-secondary small">Combined diesel/petrol</span>
+                            </div>
+                            <h5 class="fw-bold mb-0">₹{{ analytics().expenses.fuel | number }}</h5>
+                        </div>
+
+                        <!-- Tolls -->
+                        <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-2 me-3">🛣️</div>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold text-navy d-block">Toll & Parking</span>
+                                <span class="text-secondary small">Highway tolls & stops</span>
+                            </div>
+                            <h5 class="fw-bold mb-0">₹{{ analytics().expenses.toll | number }}</h5>
+                        </div>
+
+                        <!-- Bata -->
+                        <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-3">👨‍✈️</div>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold text-navy d-block">Driver Bata</span>
+                                <span class="text-secondary small">Daily allowances</span>
+                            </div>
+                            <h5 class="fw-bold mb-0">₹{{ analytics().expenses.bata | number }}</h5>
+                        </div>
+
+                        <!-- Permit -->
+                        <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">📜</div>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold text-navy d-block">Permit Tax</span>
+                                <span class="text-secondary small">Inter-state crossing</span>
+                            </div>
+                            <h5 class="fw-bold mb-0">₹{{ analytics().expenses.permit | number }}</h5>
+                        </div>
+
+                        <!-- Other -->
+                        <div class="d-flex align-items-center p-3 border rounded-3 bg-light">
+                            <div class="rounded-circle bg-secondary bg-opacity-10 p-2 me-3">📦</div>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold text-navy d-block">Other Expenses</span>
+                                <span class="text-secondary small">Misc unclassified</span>
+                            </div>
+                            <h5 class="fw-bold mb-0">₹{{ analytics().expenses.other | number }}</h5>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-secondary">Total Operational Expense</span>
+                        <h4 class="fw-bold text-danger mb-0">₹{{ analytics().expenses.total | number }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Driver Performance & Settlement -->
+            <div class="col-lg-7">
+                <h5 class="fw-bold text-navy mb-3">DRIVER PERFORMANCE & SETTLEMENT ENGINE</h5>
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-navy-soft text-navy">
+                                <tr>
+                                    <th class="py-3 px-4 small fw-bold">Driver Name</th>
+                                    <th class="py-3 px-3 small fw-bold text-center">Trips</th>
+                                    <th class="py-3 px-3 small fw-bold text-end">Brought Revenue</th>
+                                    <th class="py-3 px-3 small fw-bold text-end">Exp. Incurred</th>
+                                    <th class="py-3 px-4 small fw-bold text-end border-start">Settlement Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngIf="analytics().driverDataList.length === 0">
+                                    <td colspan="5" class="text-center py-5 text-secondary">No driver data generated
+                                        yet.</td>
+                                </tr>
+                                <tr *ngFor="let driver of analytics().driverDataList"
+                                    class="hover-bg-light transition-all cursor-pointer"
+                                    (click)="viewDriverDetails(driver.id, driver.name)">
+                                    <td class="py-3 px-4">
+                                        <div class="fw-bold text-navy">{{ driver.name }}</div>
+                                    </td>
+                                    <td class="py-3 px-3 text-center">
+                                        <span class="badge bg-light text-secondary border px-2 py-1">{{ driver.tripCount
+                                            }}</span>
+                                    </td>
+                                    <td class="py-3 px-3 text-end fw-bold text-success">
+                                        ₹{{ driver.revenueBrought | number }}
+                                    </td>
+                                    <td class="py-3 px-3 text-end fw-bold text-danger">
+                                        ₹{{ driver.expensesIncurred | number }}
+                                    </td>
+                                    <td class="py-3 px-4 text-end border-start">
+                                        <!-- Settlement: +ve means driver owes admin, -ve means admin owes driver -->
+                                        <div class="p-2 rounded-3 border fw-bold d-inline-block"
+                                            [ngClass]="driver.settlement > 0 ? 'bg-success-soft text-success border-success' : (driver.settlement < 0 ? 'bg-danger-soft text-danger border-danger' : 'bg-light text-secondary')">
+                                            <span *ngIf="driver.settlement > 0">Collect ₹{{ driver.settlement | number
+                                                }}</span>
+                                            <span *ngIf="driver.settlement < 0">Pay ₹{{ -driver.settlement | number
+                                                }}</span>
+                                            <span *ngIf="driver.settlement === 0">Settled (₹0)</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

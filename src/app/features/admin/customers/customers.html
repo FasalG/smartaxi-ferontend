@@ -1,0 +1,117 @@
+<div class="customers-dashboard p-4 min-vh-100 bg-light">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-navy mb-1">Customer Management</h2>
+            <p class="text-secondary small mb-0">View, add, and manage your frequent customers.</p>
+        </div>
+        <div>
+            <button (click)="onAdd()" class="btn btn-navy rounded-pill px-4 fw-bold shadow-sm">
+                + Add New Customer
+            </button>
+        </div>
+    </div>
+
+    <!-- CUSTOMER LIST -->
+    <div class="row g-4 mb-5" *ngIf="!showForm()">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary small fw-bold uppercase">
+                            <tr>
+                                <th class="py-3 px-4">Customer Details</th>
+                                <th class="py-3 px-4">Phone</th>
+                                <th class="py-3 px-4">Email</th>
+                                <th class="py-3 px-4">Address</th>
+                                <th class="py-3 px-4 text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let c of customers()" class="hover-bg-light transition-all">
+                                <td class="py-3 px-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-navy bg-opacity-10 text-navy d-flex align-items-center justify-content-center"
+                                            style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">{{ c.name.charAt(0).toUpperCase() }}</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-navy">{{ c.name }}</div>
+                                            <div class="small text-secondary">Added on {{ c.createdAt | date:'MMM d, y'
+                                                }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="fw-bold text-navy">{{ c.phone }}</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-muted">{{ c.email || 'N/A' }}</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-muted small truncate-1" style="max-width: 200px;">{{ c.address ||
+                                        'N/A' }}</span>
+                                </td>
+                                <td class="py-3 px-4 text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button (click)="onEdit(c)" class="btn btn-sm btn-navy-soft rounded-pill px-3">
+                                            Edit
+                                        </button>
+                                        <button (click)="onDelete(c._id!)"
+                                            class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr *ngIf="customers().length === 0">
+                                <td colspan="5" class="text-center py-5 text-secondary">
+                                    No customers found. Click "+ Add New Customer" to get started.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMER FORM (OVERLAY) -->
+    <div *ngIf="showForm()" class="animate-fade-in card border-0 shadow-lg p-4 rounded-4 mx-auto"
+        style="max-width: 600px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-navy mb-0">{{ isEditing() ? 'Edit Customer' : '+ New Customer' }}</h4>
+            <button (click)="showForm.set(false)" class="btn-close-custom bg-light border-0 rounded-circle p-2">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <form [formGroup]="customerForm" (ngSubmit)="onSubmit()" class="row g-3">
+            <div class="col-12">
+                <label class="form-label-premium">Full Name *</label>
+                <input formControlName="name" type="text" class="form-control-premium" placeholder="Enter name">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label-premium">Phone Number *</label>
+                <input formControlName="phone" type="text" class="form-control-premium" placeholder="Enter phone">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label-premium">Email Address (Optional)</label>
+                <input formControlName="email" type="email" class="form-control-premium" placeholder="Enter email">
+            </div>
+            <div class="col-12">
+                <label class="form-label-premium">Home/Office Address (Optional)</label>
+                <textarea formControlName="address" rows="3" class="form-control-premium"
+                    placeholder="Enter full address"></textarea>
+            </div>
+            <div class="col-12 mt-4 text-end">
+                <button type="submit" [disabled]="customerForm.invalid"
+                    class="btn btn-navy px-5 rounded-pill shadow-lg">
+                    {{ isEditing() ? 'Update Customer' : 'Save Customer' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -46,6 +46,7 @@ interface MenuItem {
               <path *ngIf="item.icon === 'Car'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               <path *ngIf="item.icon === 'MapPin'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path *ngIf="item.icon === 'BarChart3'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <path *ngIf="item.icon === 'Activity'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               <path *ngIf="item.icon === 'Bank'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M3 10h18M5 10v11m14-11v11M9 10v11m6-11v11M12 3L2 10h20L12 3z" />
             </svg>
             <span>{{ item.label }}</span>
@@ -148,6 +149,8 @@ export class SidebarComponent implements OnInit {
         { route: 'admin/vehicles', label: 'Vehicles', icon: 'Car' },
         { route: 'admin/trips', label: 'Trips', icon: 'MapPin' },
         { route: 'admin/reports', label: 'Reports', icon: 'BarChart3' },
+        { route: 'admin/analytics', label: 'Analytics Engine', icon: 'Activity' },
+        { route: 'admin/customers', label: 'Customers', icon: 'Users' },
         { route: 'admin/maintenance', label: 'Maintenance', icon: 'Wrench' },
         { route: 'admin/drivers', label: 'Drivers', icon: 'Users' }
       ];

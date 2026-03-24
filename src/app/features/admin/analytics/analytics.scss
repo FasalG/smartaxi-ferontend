@@ -1,0 +1,27 @@
+.hover-scale {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: translateY(-5px);
+}
+
+.bg-navy-soft {
+    background-color: rgba(3, 37, 76, 0.05);
+}
+
+.text-navy {
+    color: #03254c;
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.tracking-widest {
+    letter-spacing: 0.1em;
+}
+
+.hover-bg-light:hover {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}

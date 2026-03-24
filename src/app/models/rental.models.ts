@@ -8,19 +8,13 @@ export interface Category {
 export interface Customer {
     _id?: string;
     id?: string;
-    customer_code: string;
     name: string;
-    company?: string;
-    email: string;
     phone: string;
+    email?: string;
     address?: string;
-    city?: string;
-    state?: string;
-    country: string;
-    gst_registered: boolean;
-    gst_number?: string;
-    status: 'active' | 'inactive';
-    created_at: string;
+    tenantId?: any;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface RentalItem {
@@ -169,6 +163,7 @@ export interface Trip {
     endTime?: string;
     startLocation: string;
     endLocation?: string;
+    customerId?: any;
     customerName: string;
     visitingPlaces: string;
     tripType: 'Cash' | 'Credit';
@@ -185,10 +180,15 @@ export interface Trip {
     permitTax?: number;
     nightCharges?: number;
     fuelCharges?: number;
+    driverBata?: number;
+    otherExpenses?: number;
+    otherExpensesList?: { name: string, amount: number }[];
     advanceAmount?: number;
     totalAmount?: number;
     balanceAmount?: number;
     paidAmount?: number;
+    driverSettlementAmount?: number;
+    driverEarnings?: number;
     guestComments?: string;
     status: 'in-progress' | 'completed' | 'cancelled';
     paymentStatus: 'pending' | 'paid';

@@ -1,0 +1,22 @@
+.btn-navy-soft {
+    background-color: rgba(3, 37, 76, 0.05);
+    color: #03254c;
+    border: 1px solid rgba(3, 37, 76, 0.1);
+    font-weight: 500;
+}
+
+.btn-navy-soft:hover {
+    background-color: rgba(3, 37, 76, 0.1);
+    color: #01162e;
+}
+
+.hover-bg-light:hover {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.truncate-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

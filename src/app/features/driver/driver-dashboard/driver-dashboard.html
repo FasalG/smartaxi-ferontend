@@ -5,8 +5,21 @@
             <h2 class="fw-bold text-navy mb-1">Driver Dashboard</h2>
             <p class="text-secondary small mb-0">Welcome back, {{ currentUser()?.name }}</p>
         </div>
-        <div *ngIf="activeTrip()" class="status-badge pulse">
-            <span class="dot bg-success"></span> Active Trip In Progress
+        <div class="d-flex align-items-center gap-3">
+            <div *ngIf="!activeTrip()">
+                <label class="small text-secondary fw-bold mb-0">Current Vehicle</label>
+                <select
+                    class="form-select form-select-sm border-0 shadow-sm rounded-pill fw-bold bg-white text-navy px-3 py-1 mt-1"
+                    [value]="selectedVehicleId()" (change)="onVehicleSelectChange($event)">
+                    <option value="">Select a Vehicle</option>
+                    <option *ngFor="let v of vehicles()" [value]="v._id">
+                        {{ v.make }} {{ v.model }} ({{ v.licensePlate }})
+                    </option>
+                </select>
+            </div>
+            <div *ngIf="activeTrip()" class="status-badge pulse h-100 mt-2">
+                <span class="dot bg-success"></span> Active Trip In Progress
+            </div>
         </div>
     </div>
 
@@ -28,8 +41,7 @@
                 <h3 class="fw-bold mb-3">Ready for a new trip?</h3>
                 <p class="text-secondary max-w-400 mx-auto mb-4">Ensure your vehicle is ready and all details are
                     accurate before starting.</p>
-                <button (click)="showStartTripForm.set(true)"
-                    class="btn btn-navy btn-lg px-5 rounded-pill shadow-lg hover-scale">
+                <button (click)="showStartForm()" class="btn btn-navy btn-lg px-5 rounded-pill shadow-lg hover-scale">
                     Start New Trip
                 </button>
             </div>
@@ -57,9 +69,32 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label-premium">Customer / Company Name</label>
-                        <input formControlName="customerName" type="text" class="form-control-premium"
-                            placeholder="e.g. MRF Paint Company">
+                        <label class="form-label-premium">Customer</label>
+                        <select formControlName="customerId" class="form-control-premium">
+                            <option value="">Select Customer...</option>
+                            <option *ngFor="let c of customers()" [value]="c._id">{{ c.name }}</option>
+                            <option value="new">+ Add New Customer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" *ngIf="startTripForm.get('customerId')?.value === 'new'">
+                        <label class="form-label-premium">New Customer Name</label>
+                        <input formControlName="newCustomerName" type="text" class="form-control-premium"
+                            placeholder="Full Name">
+                    </div>
+                    <div class="col-md-6" *ngIf="startTripForm.get('customerId')?.value === 'new'">
+                        <label class="form-label-premium">New Customer Phone</label>
+                        <input formControlName="newCustomerPhone" type="text" class="form-control-premium"
+                            placeholder="Phone">
+                    </div>
+                    <div class="col-md-6" *ngIf="startTripForm.get('customerId')?.value === 'new'">
+                        <label class="form-label-premium">New Customer Email (Optional)</label>
+                        <input formControlName="newCustomerEmail" type="email" class="form-control-premium"
+                            placeholder="Gmail/Email">
+                    </div>
+                    <div class="col-md-6" *ngIf="startTripForm.get('customerId')?.value === 'new'">
+                        <label class="form-label-premium">New Customer Address (Optional)</label>
+                        <input formControlName="newCustomerAddress" type="text" class="form-control-premium"
+                            placeholder="Home/Office Address">
                     </div>
                     <div class="col-md-12">
                         <label class="form-label-premium">Visiting Places (From - To)</label>
@@ -76,19 +111,7 @@
                         <input formControlName="startOdometer" type="number" class="form-control-premium"
                             placeholder="Enter KM reading">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label-premium">Trip Type</label>
-                        <div class="d-flex gap-3">
-                            <div class="form-check-premium">
-                                <input formControlName="tripType" type="radio" value="Cash" id="typeCash">
-                                <label for="typeCash">Cash</label>
-                            </div>
-                            <div class="form-check-premium">
-                                <input formControlName="tripType" type="radio" value="Credit" id="typeCredit">
-                                <label for="typeCredit">Credit</label>
-                            </div>
-                        </div>
-                    </div>
+
                     <div class="col-md-6">
                         <label class="form-label-premium">AC Type</label>
                         <div class="d-flex gap-3">
@@ -174,63 +197,148 @@
                             placeholder="Final KM reading">
                     </div>
 
+                    <!-- Charges Calculation Section -->
                     <div class="col-12 mt-4 border-top pt-4">
-                        <h5 class="fw-bold text-navy mb-3">Charges Calculation</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-navy mb-0">Charges Calculation</h5>
+                            <span class="badge bg-navy-soft text-navy px-3 py-2 rounded-pill">Settlement Logic
+                                Applied</span>
+                        </div>
                         <div class="row g-3">
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Minimum Charges</label>
-                                <input formControlName="minimumCharges" type="number" class="form-control-premium">
+                                <label class="form-label-premium text-primary">Amount to Pay (Invoice)</label>
+                                <input formControlName="totalAmount" type="number"
+                                    class="form-control-premium border-primary border-2 shadow-sm"
+                                    placeholder="₹ Total Bill">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Extra KM Charges</label>
-                                <input formControlName="extraKmCharges" type="number" class="form-control-premium">
+                                <label class="form-label-premium text-success">Customer Paid (Receipt)</label>
+                                <input formControlName="paidAmount" type="number"
+                                    class="form-control-premium border-success border-2 shadow-sm"
+                                    placeholder="₹ Amount Paid">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Extra hours charges</label>
-                                <input formControlName="extraHoursCharges" type="number" class="form-control-premium">
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Toll & Parking</label>
-                                <input formControlName="tollParking" type="number" class="form-control-premium">
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Night Charges</label>
-                                <input formControlName="nightCharges" type="number" class="form-control-premium">
+                                <label class="form-label-premium text-info">Driver Payment (20%)</label>
+                                <input formControlName="driverEarnings" type="number"
+                                    class="form-control-premium border-info border-2 shadow-sm"
+                                    placeholder="₹ Auto calculated">
                             </div>
                             <div class="col-6 col-md-3">
                                 <label class="form-label-premium">Fuel Charges</label>
                                 <input formControlName="fuelCharges" type="number" class="form-control-premium">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Permit Tax</label>
-                                <input formControlName="permitTax" type="number" class="form-control-premium">
+                                <label class="form-label-premium">Toll & Parking</label>
+                                <input formControlName="tollParking" type="number" class="form-control-premium">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Less Advance</label>
-                                <input formControlName="advanceAmount" type="number" class="form-control-premium">
+                                <label class="form-label-premium">Driver Bata</label>
+                                <input formControlName="driverBata" type="number" class="form-control-premium">
+                            </div>
+                            <!-- Advance is now read-only and fetched from active trip data -->
+                            <div class="col-12 mt-2">
+                                <div
+                                    class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
+                                    Advance Received: <strong>₹{{ activeTrip()?.advanceAmount || 0 }}</strong> (Auto
+                                    Applied)
+                                </div>
+                            </div>
+
+                            <!-- OTHER EXPENSES DYNAMIC ROWS -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label-premium mb-0">Other Expenses</label>
+                                    <button type="button" (click)="addOtherExpenseRow()"
+                                        class="btn btn-sm btn-navy-soft rounded-pill px-3">
+                                        + Add Expense Row
+                                    </button>
+                                </div>
+                                <div formArrayName="otherExpensesList" class="d-flex flex-column gap-2">
+                                    <div *ngFor="let other of otherExpensesArray.controls; let i=index"
+                                        [formGroupName]="i" class="row g-2 animate-fade-in align-items-end">
+                                        <div class="col-6">
+                                            <input formControlName="name" type="text" class="form-control-premium py-2"
+                                                placeholder="Expense Name (e.g. Permit)">
+                                        </div>
+                                        <div class="col-4">
+                                            <input formControlName="amount" type="number"
+                                                class="form-control-premium py-2" placeholder="Amount">
+                                        </div>
+                                        <div class="col-2 pb-1">
+                                            <button type="button" (click)="removeOtherExpenseRow(i)"
+                                                class="btn btn-outline-danger w-100 border-0">
+                                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p *ngIf="otherExpensesArray.length === 0"
+                                        class="smaller text-secondary italic opacity-50 mb-0">No other expenses added.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <label class="form-label-premium">Trip Payment Type</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check-premium">
+                                        <input formControlName="tripType" type="radio" value="Cash" id="pCash">
+                                        <label for="pCash">Cash (Driver Collects)</label>
+                                    </div>
+                                    <div class="form-check-premium">
+                                        <input formControlName="tripType" type="radio" value="Credit" id="pCredit">
+                                        <label for="pCredit">Credit (To Admin Acct)</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- SUMMARY SECTION -->
-                    <div class="col-12 mt-4 bg-light p-4 rounded-4">
-                        <div class="row text-center">
-                            <div class="col-md-3">
-                                <p class="smaller text-secondary mb-1">Total Distance</p>
-                                <h4 class="fw-bold mb-0 text-navy">{{ totalKm() }} KM</h4>
+                    <div
+                        class="col-12 mt-4 bg-navy text-white p-4 rounded-4 shadow-lg border-start border-5 border-warning">
+                        <div class="row text-center gy-3">
+                            <div class="col-6 col-md-2">
+                                <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Total Bill</p>
+                                <h4 class="fw-bold mb-0">₹{{ completeTripForm.get('totalAmount')?.value || 0 }}</h4>
                             </div>
-                            <div class="col-md-3">
-                                <p class="smaller text-secondary mb-1">Total Amount</p>
-                                <h4 class="fw-bold mb-0 text-primary">₹{{ totalAmount() }}</h4>
+                            <div class="col-6 col-md-2">
+                                <p class="smaller text-white-50 mb-1 uppercase tracking-widest text-warning">Customer
+                                    Credit</p>
+                                <h4 class="fw-bold mb-0 text-warning">₹{{ balanceAmount() }}</h4>
                             </div>
-                            <div class="col-md-3">
-                                <p class="smaller text-secondary mb-1">Advance</p>
-                                <h4 class="fw-bold mb-0 text-success">₹{{ completeTripForm.get('advanceAmount')?.value
-                                    || 0 }}</h4>
+                            <div class="col-6 col-md-3">
+                                <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Driver Received ( Adv +
+                                    Paid )</p>
+                                <h4 class="fw-bold mb-0 text-success">
+                                    + ₹{{ (activeTrip()?.advanceAmount || 0) +
+                                    (completeTripForm.get('paidAmount')?.value || 0) }}
+                                </h4>
                             </div>
-                            <div class="col-md-3">
-                                <p class="smaller text-secondary mb-1">BALANCE</p>
-                                <h4 class="fw-bold mb-0 text-danger">₹{{ balanceAmount() }}</h4>
+                            <div class="col-6 col-md-2">
+                                <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Deductions (Exp + Pay)
+                                </p>
+                                <h4 class="fw-bold mb-0 text-danger">
+                                    - ₹{{ (completeTripForm.get('fuelCharges')?.value || 0) +
+                                    (completeTripForm.get('tollParking')?.value || 0) +
+                                    (completeTripForm.get('driverBata')?.value || 0) +
+                                    (completeTripForm.get('driverEarnings')?.value || 0) + totalOtherExpenses() }}
+                                </h4>
+                            </div>
+                            <div class="col-12 col-md-3 border-start border-white-10">
+                                <p class="small text-white-50 fw-bold mb-1 uppercase tracking-widest">Admin Settlement
+                                </p>
+                                <div class="p-2 rounded-3 d-inline-block w-100"
+                                    [ngClass]="driverSettlementAmount() >= 0 ? 'bg-success bg-opacity-25 text-success' : 'bg-danger bg-opacity-25 text-warning'">
+                                    <h4 class="fw-bold mb-0">
+                                        {{ driverSettlementAmount() >= 0 ? 'Give Admin' : 'Admin Pays' }}: ₹{{
+                                        driverSettlementAmount() >= 0 ? driverSettlementAmount() :
+                                        -driverSettlementAmount() }}
+                                    </h4>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -360,18 +468,13 @@
                     <h6 class="fw-bold text-navy mb-3">Hire Charges Breakdown</h6>
                     <div class="d-flex flex-column gap-2">
                         <div class="d-flex justify-content-between border-bottom pb-1">
-                            <span class="text-secondary small">Minimum Charges</span>
-                            <span class="fw-bold">₹{{ selectedTrip()?.minimumCharges }}</span>
+                            <span class="text-secondary small">Total Bill (Invoice)</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.totalAmount }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-bottom pb-1"
-                            *ngIf="selectedTrip()?.extraKmCharges">
-                            <span class="text-secondary small">Extra KM Charges</span>
-                            <span class="fw-bold">₹{{ selectedTrip()?.extraKmCharges }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between border-bottom pb-1"
-                            *ngIf="selectedTrip()?.extraHoursCharges">
-                            <span class="text-secondary small">Extra Hours Charges</span>
-                            <span class="fw-bold">₹{{ selectedTrip()?.extraHoursCharges }}</span>
+                            *ngIf="selectedTrip()?.fuelCharges">
+                            <span class="text-secondary small">Fuel Charges</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.fuelCharges }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-bottom pb-1"
                             *ngIf="selectedTrip()?.tollParking">
@@ -379,35 +482,41 @@
                             <span class="fw-bold">₹{{ selectedTrip()?.tollParking }}</span>
                         </div>
                         <div class="d-flex justify-content-between border-bottom pb-1"
-                            *ngIf="selectedTrip()?.nightCharges">
-                            <span class="text-secondary small">Night Charges</span>
-                            <span class="fw-bold">₹{{ selectedTrip()?.nightCharges }}</span>
+                            *ngIf="selectedTrip()?.driverBata">
+                            <span class="text-secondary small">Driver Bata</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.driverBata }}</span>
                         </div>
-                        <div class="d-flex justify-content-between border-bottom pb-1"
-                            *ngIf="selectedTrip()?.permitTax">
-                            <span class="text-secondary small">Permit Tax</span>
-                            <span class="fw-bold">₹{{ selectedTrip()?.permitTax }}</span>
+
+                        <!-- Other Expenses List -->
+                        <div *ngIf="selectedTrip()?.otherExpensesList?.length">
+                            <p class="smaller text-secondary mt-2 mb-1 uppercase fw-bold tracking-widest">Other Expenses
+                            </p>
+                            <div *ngFor="let exp of selectedTrip()?.otherExpensesList"
+                                class="d-flex justify-content-between border-bottom pb-1 ms-2">
+                                <span class="text-secondary small">{{ exp.name }}</span>
+                                <span class="fw-bold small">₹{{ exp.amount }}</span>
+                            </div>
                         </div>
-                        <div class="d-flex justify-content-between border-bottom pb-1"
-                            *ngIf="selectedTrip()?.fuelCharges">
-                            <span class="text-secondary small">Fuel Charges</span>
-                            <span class="fw-bold">₹{{ selectedTrip()?.fuelCharges }}</span>
+
+                        <div class="d-flex justify-content-between pt-3 text-navy border-top border-2">
+                            <span class="fw-bold">TOTAL BILLED BY COMPANY</span>
+                            <span class="fw-bold fs-5">₹{{ selectedTrip()?.totalAmount }}</span>
                         </div>
-                        <div class="d-flex justify-content-between pt-2">
-                            <span class="fw-bold text-navy">TOTAL AMOUNT</span>
-                            <span class="fw-bold text-navy fs-5">₹{{ selectedTrip()?.totalAmount }}</span>
-                        </div>
+
                         <div class="d-flex justify-content-between text-success">
-                            <span class="small fw-bold">Less Advance</span>
-                            <span class="fw-bold">- ₹{{ selectedTrip()?.advanceAmount }}</span>
+                            <span class="small fw-bold">Advance Collected</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.advanceAmount }}</span>
                         </div>
-                        <div class="d-flex justify-content-between text-info" *ngIf="selectedTrip()?.paidAmount">
-                            <span class="small fw-bold">Customer Paid</span>
-                            <span class="fw-bold">- ₹{{ selectedTrip()?.paidAmount }}</span>
+                        <div class="d-flex justify-content-between text-success" *ngIf="selectedTrip()?.paidAmount">
+                            <span class="small fw-bold">Payment Collected</span>
+                            <span class="fw-bold">₹{{ selectedTrip()?.paidAmount }}</span>
                         </div>
-                        <div class="d-flex justify-content-between pt-2 border-top border-2">
-                            <span class="fw-bold text-danger">BALANCE PAYABLE</span>
-                            <span class="fw-bold text-danger fs-4">₹{{ selectedTrip()?.balanceAmount }}</span>
+
+                        <div class="d-flex justify-content-between pt-2 border-top border-2"
+                            [ngClass]="selectedTrip()?.balanceAmount ? 'text-danger' : 'text-success secondary'">
+                            <span class="fw-bold uppercase">{{ selectedTrip()?.balanceAmount ? 'Customer Balance
+                                (Credit)' : 'Account Settled' }}</span>
+                            <span class="fw-bold fs-4">₹{{ selectedTrip()?.balanceAmount }}</span>
                         </div>
                     </div>
                 </div>
@@ -420,4 +529,3 @@
             </div>
         </div>
     </div>
-</div>

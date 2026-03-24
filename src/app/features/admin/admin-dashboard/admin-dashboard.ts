@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { TripService } from '../../../services/trip.service';
 import { VehicleService } from '../../../services/vehicle.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { computed } from '@angular/core';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './admin-dashboard.html',
   styleUrls: ['./admin-dashboard.scss'],
 })
@@ -21,6 +23,7 @@ export class AdminDashboard {
   availabilityStatus = signal<'available' | 'unavailable' | null>(null);
   conflictingTrip = signal<any | null>(null);
 
+  // Removed Analytics Computed (moved to AnalyticsComponent)
   checkerForm = this.fb.group({
     vehicleId: ['', Validators.required],
     startTime: [new Date().toISOString().slice(0, 16), Validators.required],

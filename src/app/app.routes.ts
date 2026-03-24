@@ -31,6 +31,8 @@ export const routes: Routes = [
       { path: 'vehicles', loadComponent: () => import('./features/admin/vehicles/vehicles').then(m => m.VehiclesComponent) },
       { path: 'trips', loadComponent: () => import('./features/admin/trips/trips').then(m => m.TripsComponent) },
       { path: 'reports', loadComponent: () => import('./features/admin/reports/reports').then(m => m.ReportsComponent) },
+      { path: 'analytics', loadComponent: () => import('./features/admin/analytics/analytics').then(m => m.AnalyticsComponent) },
+      { path: 'customers', loadComponent: () => import('./features/admin/customers/customers').then(m => m.CustomersComponent) },
       { path: 'maintenance', loadComponent: () => import('./features/admin/maintenance/maintenance').then(m => m.MaintenanceComponent) },
       { path: 'drivers', loadComponent: () => import('./features/admin/drivers/drivers').then(m => m.DriversComponent) }
     ]
