@@ -26,10 +26,13 @@ export class TripsComponent {
     trips = signal<any[]>([]);
     drivers = signal<any[]>([]);
     vehicles = signal<any[]>([]);
-    loading = false;
-    isCreating = false;
-    isEditing = false;
+    loading = signal(false);
+    isCreating = signal(false);
+    isEditing = signal(false);
+
     editingId = signal<string | null>(null);
+    originalTripData = signal<any | null>(null);
+
     searchQuery = signal<string>('');
 
     // Pagination
@@ -66,8 +69,10 @@ export class TripsComponent {
         tollParking: [0],
         fuelCharges: [0],
         driverBata: [0],
+        permitAmount: [0],
         otherExpenses: [0],
         advanceAmount: [0],
+        baseInvoiceAmount: [0],
         totalAmount: [0],
         paidAmount: [0],
         balanceAmount: [0],
@@ -77,6 +82,7 @@ export class TripsComponent {
         endTime: [''],
         status: ['in-progress', Validators.required],
         paymentStatus: ['pending']
+
     });
 
     constructor() {
@@ -92,64 +98,108 @@ export class TripsComponent {
             const formVal = this.tripForm.getRawValue();
             const total = Number(formVal.totalAmount) || 0;
             const advance = Number(formVal.advanceAmount) || 0;
-            const paid = Number(formVal.paidAmount) || 0;
+            const paid = Number(formVal.paidAmount) || 0; // First declaration of paid
             const balance = total - (advance + paid);
 
-            // Recalculate Driver Earnings based on vehicle percentage if provided
+            // Recalculate Driver Earnings based on Base Invoice ONLY
             const vehicleId = formVal.vehicleId;
             const vehicle = this.vehicles().find(v => v._id === vehicleId);
             const percentage = (vehicle?.driverPaymentPercentage || 20) / 100;
-            const earnings = Math.round(total * percentage);
+            const baseAmount = Number(formVal.baseInvoiceAmount) || 0;
+            const earnings = Math.round(baseAmount * percentage);
 
-            // Driver Settlement = (Advance + Paid) - (Fuel + Toll + Bata + Other) - Earnings
+            // Driver Settlement = Paid (Customer Closing) - (Fuel + Toll + Bata + Permit + Other) - Commission
+            // Advance is excluded because it's always received directly by the Admin.
             const fuel = Number(formVal.fuelCharges) || 0;
             const toll = Number(formVal.tollParking) || 0;
             const bata = Number(formVal.driverBata) || 0;
+            const permit = Number(formVal.permitAmount) || 0;
             const other = Number(formVal.otherExpenses) || 0;
-            const settlement = (advance + paid) - (fuel + toll + bata + other) - earnings;
+            const settlement = paid - (fuel + toll + bata + permit + other) - earnings;
 
             this.tripForm.patchValue({
                 balanceAmount: balance,
                 driverEarnings: earnings,
                 driverSettlementAmount: settlement
             }, { emitEvent: false });
+
         });
     }
 
     get f() { return this.tripForm.controls; }
+    private formatDateTime(date: any): string {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
 
     exportTrips() {
-        this.excelService.exportToExcel(this.trips(), 'Trips');
+        const data = this.trips().map(t => ({
+            'Trip Start': this.formatDateTime(t.startTime),
+            'Trip End': this.formatDateTime(t.endTime),
+            'Customer': t.customerName || 'N/A',
+            'Driver': t.driverId?.name || 'N/A',
+            'Vehicle': t.vehicleId ? `${t.vehicleId.make} ${t.vehicleId.model} (${t.vehicleId.licensePlate})` : 'N/A',
+            'From': t.startLocation || '',
+            'To': t.endLocation || '',
+            'KM': t.totalKm || 0,
+            'Amount': t.totalAmount || 0,
+            'Status': t.status || 'in-progress'
+        }));
+
+        this.excelService.exportToExcel(data, 'Trips_List');
     }
+
+
 
     onFileChange(event: any) {
         const file = event.target.files[0];
         if (file) {
             this.excelService.importFromExcel(file).then((data) => {
-                data.forEach((trip: any) => {
+                data.forEach((row: any) => {
+                    // Map name/plate back to IDs
+                    const driver = this.drivers().find(d =>
+                        d.name?.toLowerCase().trim() === (row.Driver || row.driverId)?.toLowerCase().trim()
+                    );
+                    const vehicle = this.vehicles().find(v =>
+                        v.licensePlate?.toLowerCase().trim() === (row.Vehicle || row.vehicleId)?.toLowerCase().trim()
+                    );
+
                     const payload = {
-                        driverId: trip.driverId || trip.DriverId,
-                        vehicleId: trip.vehicleId || trip.VehicleId,
-                        customerName: trip.customerName || trip.CustomerName,
-                        startLocation: trip.startLocation || trip.StartLocation || 'Default',
-                        startOdometer: Number(trip.startOdometer || trip.StartOdometer || 0),
+                        driverId: driver?._id || row.driverId || row.Driver,
+                        vehicleId: vehicle?._id || row.vehicleId || row.Vehicle,
+                        customerName: row.Customer || row.customerName || 'N/A',
+                        startLocation: row.From || row.startLocation || 'N/A',
+                        startOdometer: Number(row['Start Odo'] || row.startOdometer || 0),
                         status: 'in-progress' as const,
                         tenantId: this.authService.currentUser()?._id
                     };
+
                     this.tripService.createTrip(payload).subscribe({
-                        next: () => this.fetchTrips()
+                        next: () => this.fetchTrips(),
+                        error: (err) => console.error(err)
                     });
+
                 });
             }).catch(err => console.error('Error importing Excel:', err));
         }
     }
 
+
     fetchTrips() {
+        this.loading.set(true);
         this.tripService.getTrips().subscribe({
-            next: (res: any[]) => this.trips.set(res || []),
-            error: (err: any) => console.error(err)
+            next: (res: any[]) => {
+                this.trips.set(res || []);
+                this.loading.set(false);
+            },
+            error: (err: any) => {
+                console.error(err);
+                this.loading.set(false);
+            }
         });
     }
+
 
     fetchDrivers() {
         this.authService.getDrivers().subscribe({
@@ -166,10 +216,11 @@ export class TripsComponent {
     }
 
     toggleCreateForm() {
-        this.isCreating = !this.isCreating;
-        this.isEditing = false;
+        this.isCreating.set(!this.isCreating());
+        this.isEditing.set(false);
         this.editingId.set(null);
-        if (!this.isCreating) {
+        this.originalTripData.set(null);
+        if (!this.isCreating()) {
             const now = new Date();
             this.tripForm.reset({
                 status: 'in-progress',
@@ -179,17 +230,27 @@ export class TripsComponent {
         }
     }
 
+
     formatDateForInput(date: string | Date): string {
         if (!date) return '';
         const d = new Date(date);
-        return d.toISOString().slice(0, 16); // format: yyyy-MM-ddTHH:mm
+        // datetime-local input expects YYYY-MM-DDTHH:mm format in LOCAL time.
+        // toISOString() returns UTC. We must adjust by the timezone offset.
+        const timezoneOffset = d.getTimezoneOffset() * 60000;
+        const localDate = new Date(d.getTime() - timezoneOffset);
+        return localDate.toISOString().slice(0, 16);
     }
 
+
     editTrip(trip: any) {
-        this.isEditing = true;
-        this.isCreating = true;
+        this.isEditing.set(true);
+        this.isCreating.set(true);
         this.editingId.set(trip._id);
+        this.originalTripData.set(trip);
         this.tripForm.patchValue({
+
+
+
             driverId: trip.driverId?._id || trip.driverId,
             vehicleId: trip.vehicleId?._id || trip.vehicleId,
             customerName: trip.customerName || '',
@@ -208,7 +269,10 @@ export class TripsComponent {
             balanceAmount: trip.balanceAmount,
             driverEarnings: trip.driverEarnings,
             driverSettlementAmount: trip.driverSettlementAmount,
+            baseInvoiceAmount: trip.baseInvoiceAmount || 0,
+            permitAmount: trip.permitAmount || 0,
             startTime: this.formatDateForInput(trip.startTime),
+
             endTime: this.formatDateForInput(trip.endTime),
             status: trip.status,
             paymentStatus: trip.paymentStatus
@@ -240,19 +304,39 @@ export class TripsComponent {
         const start = new Date(startTime).getTime();
         const end = endTime ? new Date(endTime).getTime() : Infinity;
 
-        // Conflict Detection
-        const hasConflict = this.trips().some(trip => {
-            // Skip the trip being edited
-            if (this.isEditing && trip._id === this.editingId()) return false;
+        // Optimization: If editing, check if critical conflict-fields changed. 
+        // If not, we don't need to re-validate conflicts with other trips.
+        if (this.isEditing() && this.originalTripData()) {
+            const orig = this.originalTripData();
+            const origVehicleId = orig.vehicleId?._id || orig.vehicleId;
 
-            // Only check for the selected vehicle
-            if (trip.vehicleId?._id !== vehicleId && trip.vehicleId !== vehicleId) return false;
+            const sameVehicle = String(origVehicleId) === String(vehicleId);
+            // Use string comparison for time to avoid Timezone/ms mismatches
+            const sameStart = this.formatDateForInput(orig.startTime) === startTime;
+
+            if (sameVehicle && sameStart) {
+                this.saveTrip();
+                return;
+            }
+        }
+
+
+        const hasConflict = this.trips().some(trip => {
+            // 1. Skip the trip being edited (Robust String comparison)
+            const tid = String(trip._id || '').toLowerCase();
+            const eid = String(this.editingId() || '').toLowerCase();
+            if (this.isEditing() && tid === eid) return false;
+
+
+
+            // 2. Only check for the selected vehicle
+            const tVehicleId = trip.vehicleId?._id || trip.vehicleId;
+            if (String(tVehicleId) !== String(vehicleId)) return false;
 
             const tStart = new Date(trip.startTime).getTime();
             const tEnd = trip.endTime ? new Date(trip.endTime).getTime() : Infinity;
 
-            // Check for overlap
-            // (StartA <= EndB) and (EndA >= StartB)
+            // Check for overlap: (StartA < EndB) and (EndA > StartB)
             return (start < tEnd) && (end > tStart);
         });
 
@@ -265,14 +349,17 @@ export class TripsComponent {
             return;
         }
 
-        this.loading = true;
+        this.saveTrip();
+    }
 
+    private saveTrip() {
+        this.loading.set(true);
         const formVal = this.tripForm.value as any;
         const now = Date.now();
+        const start = new Date(formVal.startTime).getTime();
 
-        // If creating a new trip (not editing) and start time is > 1 min in future, 
-        // default status to 'scheduled' even if 'in-progress' was selected.
-        if (!this.isEditing && formVal.status === 'in-progress' && start > (now + 60000)) {
+        // Auto-status for future 'in-progress' selections
+        if (!this.isEditing() && formVal.status === 'in-progress' && start > (now + 60000)) {
             formVal.status = 'scheduled';
         }
 
@@ -281,19 +368,23 @@ export class TripsComponent {
             tenantId: this.authService.currentUser()?._id
         } as any;
 
-        const request = this.isEditing
+        const request = this.isEditing()
             ? this.tripService.updateTrip(this.editingId()!, payload)
             : this.tripService.createTrip(payload);
 
         request.subscribe({
             next: () => {
-                this.loading = false;
-                this.toggleCreateForm();
+                this.loading.set(false);
+                this.isCreating.set(false);
+                this.isEditing.set(false);
+                this.originalTripData.set(null);
                 this.fetchTrips();
             },
-            error: () => this.loading = false
+            error: () => this.loading.set(false)
         });
     }
+
+
 
     goToPage(p: number) {
         if (p >= 1 && p <= this.totalPages()) {

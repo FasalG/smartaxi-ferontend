@@ -9,6 +9,8 @@ import { routes } from './app/app.routes';
 import { authInterceptor } from './app/core/interceptors/auth.interceptor';
 
 bootstrapApplication(AppComponent, {
+
+
   providers: [
     provideZonelessChangeDetection(),
     provideRouter(routes),

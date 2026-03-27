@@ -172,13 +172,52 @@ export class ReportsComponent implements OnInit {
         return Math.abs(n || 0);
     }
 
+    private formatDateTime(date: any): string {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        // Returns format: MM/DD/YYYY, HH:MM AM/PM
+        return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+
     printReport() {
         window.print();
     }
 
     exportReports() {
-        this.excelService.exportToExcel(this.filteredTrips(), 'Trip_Reports');
+        const list = this.filteredTrips();
+        const data = list.map(t => ({
+            'Trip Start': this.formatDateTime(t.startTime),
+            'Trip End': this.formatDateTime(t.endTime),
+            'Customer': t.customerName || 'N/A',
+            'Driver': t.driverId?.name || 'N/A',
+            'Vehicle': t.vehicleId ? `${t.vehicleId.make} ${t.vehicleId.model} (${t.vehicleId.licensePlate})` : 'N/A',
+            'Trip Type': t.tripType || 'Cash',
+            'Total KM': t.totalKm || 0,
+            'Trip Total': t.totalAmount || 0,
+            'Base Invoice': t.baseInvoiceAmount || 0,
+            'Advance (Customer)': t.advanceAmount || 0,
+            'Paid (Customer)': t.paidAmount || 0,
+            'Balance (Customer)': t.balanceAmount || 0,
+            'Fuel': t.fuelCharges || 0,
+            'Toll/Parking': t.tollParking || 0,
+            'Bata': t.driverBata || 0,
+            'Permit': t.permitAmount || 0,
+            // 'Other Exp': t.otherExpenses || 0,
+
+
+            'Driver Earnings': t.driverEarnings || 0,
+            'Driver Settlement (Cash)': t.driverSettlementAmount || 0,
+            'Settlement Mode': t.driverSettlementMethod || 'none',
+            'Trip Status': t.status || '',
+            'Settlement Status': t.driverPaymentStatus || '',
+            'Notes': t.notes || ''
+        }));
+        this.excelService.exportToExcel(data, 'Trip_Reports_List');
     }
+
+
+
 
     onFileChange(event: any) {
         const file = event.target.files[0];

@@ -519,3 +519,86 @@ body {
   line-height: 1;
   border-radius: 0.2rem;
 }
+
+/* Compliance Status Indicators */
+.dot {
+  aspect-ratio: 1/1;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-pulse {
+  aspect-ratio: 1/1;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-pulse.bg-danger {
+  background-color: #ff4757 !important;
+  animation: pulse-red 2s infinite;
+}
+
+.dot-pulse.bg-success {
+  background-color: #2ed573 !important;
+  animation: pulse-green 2s infinite;
+}
+
+.dot-pulse.bg-warning {
+  background-color: #ffa502 !important;
+  animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+  }
+
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 8px rgba(255, 71, 87, 0);
+  }
+
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+  }
+}
+
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.7);
+  }
+
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 8px rgba(46, 213, 115, 0);
+  }
+
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(46, 213, 115, 0);
+  }
+}
+
+@keyframes pulse-warning {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 165, 2, 0.7);
+  }
+
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 8px rgba(255, 165, 2, 0);
+  }
+
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(255, 165, 2, 0);
+  }
+}

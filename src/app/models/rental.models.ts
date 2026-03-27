@@ -180,7 +180,10 @@ export interface Trip {
     otherExpenses?: number;
     otherExpensesList?: { name: string, amount: number }[];
     advanceAmount?: number;
+    baseInvoiceAmount?: number;
+    permitAmount?: number;
     totalAmount?: number;
+
     balanceAmount?: number;
     paidAmount?: number;
     driverSettlementAmount?: number;

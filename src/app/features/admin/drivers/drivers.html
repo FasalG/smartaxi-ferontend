@@ -17,7 +17,7 @@
             </div>
         </div>
         <div class="d-flex gap-2 align-items-center">
-            <button (click)="exportDrivers()" class="btn btn-sm btn-outline-success d-flex align-items-center gap-2"
+            <!-- <button (click)="exportDrivers()" class="btn btn-sm btn-outline-success d-flex align-items-center gap-2"
                 title="Export Excel">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -36,7 +36,7 @@
                     </svg>
                     <span class="d-none d-md-inline">Import</span>
                 </button>
-            </div>
+            </div> -->
             <button class="btn btn-sm btn-primary d-flex align-items-center gap-2" (click)="toggleCreateForm()"
                 *ngIf="!isCreating">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,44 +135,119 @@
         <div class="card-body p-4">
             <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
+                <div class="row g-4 mb-4">
+                    <!-- Driver Name -->
+                    <div class="col-md-12">
                         <label class="form-label small fw-bold text-secondary">Driver Name</label>
-                        <input type="text" class="form-control" formControlName="name" placeholder="Driver Name"
+                        <input type="text" class="form-control px-3" formControlName="name" placeholder="Full Name"
                             [ngClass]="{'is-invalid': f['name'].touched && f['name'].errors}">
-                        <div *ngIf="f['name'].touched && f['name'].errors" class="invalid-feedback">Name is required
+                    </div>
+
+                    <!-- Email Verification Row -->
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-secondary d-flex justify-content-between">
+                            <span>Email (Username)</span>
+                            <span *ngIf="isEmailVerified()" class="text-success x-small fw-bold">
+                                <svg width="12" height="12" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                    <path
+                                        d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.42-6.447z" />
+                                </svg>Verified
+                            </span>
+                        </label>
+                        <div class="input-group">
+                            <input type="email" class="form-control px-3" formControlName="email"
+                                placeholder="driver@company.com" [readonly]="isEmailVerified() || emailOtpRequested()"
+                                [ngClass]="{'is-invalid': f['email'].touched && f['email'].errors}">
+                            <button type="button" class="btn btn-outline-primary px-3"
+                                *ngIf="!isEmailVerified() && !emailOtpRequested()"
+                                [disabled]="f['email'].invalid || emailVerifyLoading()"
+                                (click)="triggerEmailVerification()">
+                                <span *ngIf="emailVerifyLoading()" class="spinner-border spinner-border-sm me-1"></span>
+                                Verify Email
+                            </button>
+                        </div>
+
+                        <!-- Inline Email OTP Input -->
+                        <div class="mt-2 bg-light p-2 rounded border" *ngIf="emailOtpRequested()">
+                            <div class="d-flex gap-2">
+                                <input type="text"
+                                    class="form-control form-control-sm text-center fw-bold letter-spacing-5"
+                                    formControlName="otp" placeholder="Enter Email OTP" maxlength="6">
+                                <button type="button" class="btn btn-sm btn-primary px-3" (click)="confirmEmailOTP()"
+                                    [disabled]="f['otp'].value?.length !== 6 || emailVerifyLoading()">
+                                    Confirm
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none"
+                                    (click)="emailOtpRequested.set(false)">Cancel</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-secondary">Email (Username)</label>
-                        <input type="email" class="form-control" formControlName="email"
-                            placeholder="driver@company.com"
-                            [ngClass]="{'is-invalid': f['email'].touched && f['email'].errors}">
-                        <div *ngIf="f['email'].touched && f['email'].errors" class="invalid-feedback">Valid email is
-                            required</div>
+
+                    <!-- Phone Verification Row -->
+                    <div class="col-md-12">
+                        <label class="form-label small fw-bold text-secondary d-flex justify-content-between">
+                            <span>Phone Number</span>
+                            <span *ngIf="isPhoneVerified()" class="text-success x-small fw-bold">
+                                <svg width="12" height="12" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                    <path
+                                        d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.42-6.447z" />
+                                </svg>Verified
+                            </span>
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control px-3" formControlName="phone"
+                                placeholder="9876543210" [readonly]="isPhoneVerified() || phoneOtpRequested()"
+                                [ngClass]="{'is-invalid': f['phone'].touched && f['phone'].errors}">
+                            <button type="button" class="btn btn-outline-primary px-3"
+                                *ngIf="!isPhoneVerified() && !phoneOtpRequested()"
+                                [disabled]="f['phone'].invalid || phoneVerifyLoading()"
+                                (click)="triggerPhoneVerification()">
+                                <span *ngIf="phoneVerifyLoading()" class="spinner-border spinner-border-sm me-1"></span>
+                                Verify Phone
+                            </button>
+                        </div>
+
+                        <!-- Inline Phone OTP Input -->
+                        <div class="mt-2 bg-light p-2 rounded border" *ngIf="phoneOtpRequested()">
+                            <div class="d-flex gap-2">
+                                <input type="text"
+                                    class="form-control form-control-sm text-center fw-bold letter-spacing-5"
+                                    formControlName="otp" placeholder="Enter SMS OTP" maxlength="6">
+                                <button type="button" class="btn btn-sm btn-primary px-3" (click)="confirmPhoneOTP()"
+                                    [disabled]="f['otp'].value?.length !== 6 || phoneVerifyLoading()">
+                                    Confirm
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none"
+                                    (click)="phoneOtpRequested.set(false)">Cancel</button>
+                            </div>
+                        </div>
+
+                        <!-- Firebase reCAPTCHA Container (Invisible) -->
+                        <div id="recaptcha-container"></div>
                     </div>
-                    <div class="col-md-6">
+
+                    <!-- Password (Optional in Edit) -->
+                    <div class="col-md-12">
                         <label class="form-label small fw-bold text-secondary">Password {{ isEditing ? '(Optional)' : ''
                             }}</label>
-                        <input type="password" class="form-control" formControlName="password" placeholder="••••••••"
-                            [ngClass]="{'is-invalid': f['password'].touched && f['password'].errors}">
-                        <div *ngIf="f['password'].touched && f['password'].errors" class="invalid-feedback">Minimum 6
-                            characters required</div>
+                        <input type="password" class="form-control px-3" formControlName="password"
+                            placeholder="••••••••">
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                    <button type="button" class="btn btn-outline-secondary px-4" (click)="toggleCreateForm()"
+                    <button type="button" class="btn btn-outline-secondary px-4 h-45" (click)="toggleCreateForm()"
                         [disabled]="loading">Cancel</button>
-                    <button type="submit" class="btn btn-primary px-4 d-flex align-items-center gap-2"
-                        [disabled]="loading || (driverForm.invalid && !isEditing)">
-                        <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"
-                            aria-hidden="true"></span>
-                        {{ isEditing ? 'Update Driver Account' : 'Create Driver Account' }}
+                    <button type="submit" class="btn btn-primary px-5 h-45 fw-bold d-flex align-items-center gap-2"
+                        [disabled]="loading || !canSave()">
+                        <span *ngIf="loading" class="spinner-border spinner-border-sm" role="status"></span>
+                        {{ isEditing ? 'Update Driver' : 'Save Driver' }}
                     </button>
                 </div>
             </form>
         </div>
+
+
     </div>
     <app-confirm-dialog #confirmDialog></app-confirm-dialog>
 </div>

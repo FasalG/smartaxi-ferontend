@@ -241,37 +241,57 @@
                                 Applied</span>
                         </div>
                         <div class="row g-3">
+                            <!-- Input Fields -->
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium text-primary">Amount to Pay (Invoice)</label>
-                                <input formControlName="totalAmount" type="number"
+                                <label class="form-label-premium text-primary">Rental Amount</label>
+                                <input formControlName="baseInvoiceAmount" type="number"
                                     class="form-control-premium border-primary border-2 shadow-sm"
-                                    placeholder="₹ Total Bill">
+                                    placeholder="₹ Base Bill">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium text-success">Customer Paid (Receipt)</label>
-                                <input formControlName="paidAmount" type="number"
-                                    class="form-control-premium border-success border-2 shadow-sm"
-                                    [readonly]="!activeTripCustomer()?.isEligibleForCredit" placeholder="₹ Amount Paid">
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label-premium text-info">Driver Payment ({{
-                                    currentVehiclePercentage() }}%)</label>
-                                <input formControlName="driverEarnings" type="number"
-                                    class="form-control-premium border-info border-2 shadow-sm"
-                                    placeholder="₹ Auto calculated">
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Fuel Charges</label>
+                                <label class="form-label-premium text-secondary">Fuel Charges</label>
                                 <input formControlName="fuelCharges" type="number" class="form-control-premium">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Toll & Parking</label>
+                                <label class="form-label-premium text-secondary">Toll & Parking</label>
                                 <input formControlName="tollParking" type="number" class="form-control-premium">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label-premium">Driver Bata</label>
+                                <label class="form-label-premium text-secondary">Driver Bata</label>
                                 <input formControlName="driverBata" type="number" class="form-control-premium">
                             </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label-premium text-secondary">Permit</label>
+                                <input formControlName="permitAmount" type="number" class="form-control-premium">
+                            </div>
+
+                            <!-- Line Break / Totals Section -->
+                            <div class="col-12 border-top pt-3 mt-4">
+                                <div class="row g-3">
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label-premium text-dark">Gross Total</label>
+                                        <input formControlName="totalAmount" type="number"
+                                            class="form-control-premium bg-light fw-bold border-dark border-1 shadow-sm"
+                                            readonly placeholder="₹ Gross Total">
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label-premium text-success">Customer Paid</label>
+                                        <input formControlName="paidAmount" type="number"
+                                            class="form-control-premium border-success border-2 shadow-sm"
+                                            [readonly]="!activeTripCustomer()?.isEligibleForCredit"
+                                            placeholder="₹ Amount Paid">
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label-premium text-info">Driver Payment ({{
+                                            currentVehiclePercentage() }}%)</label>
+                                        <input formControlName="driverEarnings" type="number"
+                                            class="form-control-premium border-info border-2 shadow-sm" readonly
+                                            placeholder="₹ Auto calculated">
+                                    </div>
+                                </div>
+                            </div>
+
+
                             <div class="col-12 mt-2">
                                 <div
                                     class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
@@ -280,7 +300,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-12 mt-4">
+                            <!-- <div class="col-12 mt-4">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <label class="form-label-premium mb-0">Other Expenses</label>
                                     <button type="button" (click)="addOtherExpenseRow()"
@@ -314,7 +334,7 @@
                                         class="smaller text-secondary italic opacity-50 mb-0">No other expenses added.
                                     </p>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <div class="col-12 mt-3 p-3 bg-light rounded-4 border-start border-4 border-navy">
                                 <label class="form-label-premium mb-1">Trip Payment Method (Auto)</label>
@@ -365,9 +385,11 @@
                                     - ₹{{ (completeTripForm.get('fuelCharges')?.value || 0) +
                                     (completeTripForm.get('tollParking')?.value || 0) +
                                     (completeTripForm.get('driverBata')?.value || 0) +
+                                    (completeTripForm.get('permitAmount')?.value || 0) +
                                     (completeTripForm.get('driverEarnings')?.value || 0) + totalOtherExpenses() }}
                                 </h4>
                             </div>
+
                             <div class="col-12 col-md-3 border-start border-white-10">
                                 <p class="small text-white-50 fw-bold mb-1 uppercase tracking-widest">Admin Settlement
                                 </p>
@@ -543,9 +565,25 @@
                         <div class="d-flex flex-column gap-2">
                             <!-- Customer Side Bills -->
                             <div class="d-flex justify-content-between border-bottom pb-1">
-                                <span class="text-secondary small">Total Bill (Customer Invoice)</span>
-                                <span class="fw-bold">₹{{ selectedTrip()?.totalAmount }}</span>
+                                <span class="text-secondary small">Base Invoice Amount</span>
+                                <span class="fw-bold">₹{{ selectedTrip()?.baseInvoiceAmount || 0 }}</span>
                             </div>
+                            <div class="d-flex justify-content-between border-bottom pb-1"
+                                *ngIf="selectedTrip()?.tollParking">
+                                <span class="text-secondary small">Toll & Parking</span>
+                                <span class="fw-bold">+ ₹{{ selectedTrip()?.tollParking }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom pb-1"
+                                *ngIf="selectedTrip()?.driverBata">
+                                <span class="text-secondary small">Driver Bata</span>
+                                <span class="fw-bold">+ ₹{{ selectedTrip()?.driverBata }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom pb-1"
+                                *ngIf="selectedTrip()?.permitAmount">
+                                <span class="text-secondary small">Permit</span>
+                                <span class="fw-bold">+ ₹{{ selectedTrip()?.permitAmount }}</span>
+                            </div>
+
 
                             <!-- Driver Expenses -->
                             <div class="d-flex justify-content-between border-bottom pb-1 mt-2"
@@ -559,17 +597,23 @@
                                 <span class="fw-bold text-danger">- ₹{{ selectedTrip()?.tollParking }}</span>
                             </div>
                             <div class="d-flex justify-content-between border-bottom pb-1"
+                                *ngIf="selectedTrip()?.permitAmount">
+                                <span class="text-secondary small">Permit (Paid by Driver)</span>
+                                <span class="fw-bold text-danger">- ₹{{ selectedTrip()?.permitAmount }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom pb-1"
                                 *ngIf="selectedTrip()?.driverBata">
-                                <span class="text-secondary small">Driver Bata</span>
+                                <span class="text-secondary small">Driver Bata (Expense)</span>
                                 <span class="fw-bold text-danger">- ₹{{ selectedTrip()?.driverBata }}</span>
                             </div>
+
                             <div class="d-flex justify-content-between border-bottom pb-1"
                                 *ngIf="selectedTrip()?.driverEarnings">
                                 <span class="text-secondary small">Driver Payment (Commission)</span>
                                 <span class="fw-bold text-danger">- ₹{{ selectedTrip()?.driverEarnings }}</span>
                             </div>
 
-                            <div *ngIf="selectedTrip()?.otherExpensesList?.length">
+                            <!-- <div *ngIf="selectedTrip()?.otherExpensesList?.length">
                                 <p class="smaller text-secondary mt-2 mb-1 uppercase fw-bold tracking-widest">Other
                                     Expenses</p>
                                 <div *ngFor="let exp of selectedTrip()?.otherExpensesList"
@@ -577,25 +621,32 @@
                                     <span class="text-secondary small">{{ exp.name }}</span>
                                     <span class="fw-bold small text-danger">- ₹{{ exp.amount }}</span>
                                 </div>
-                            </div>
+                            </div> -->
+
 
                             <div class="d-flex justify-content-between pt-3 text-navy border-top border-2">
                                 <span class="fw-bold">TOTAL BILLED TO CUSTOMER</span>
                                 <span class="fw-bold fs-5">₹{{ selectedTrip()?.totalAmount }}</span>
                             </div>
 
+                            <div class="d-flex justify-content-between text-secondary italic">
+                                <span class="small">Advance (Already Paid to Admin)</span>
+                                <span class="small">- ₹{{ selectedTrip()?.advanceAmount || 0 }}</span>
+                            </div>
+
                             <div class="d-flex justify-content-between text-success">
-                                <span class="small fw-bold">Customer Cash Paid</span>
-                                <span class="fw-bold text-success">₹{{ (selectedTrip()?.advanceAmount||0) +
-                                    (selectedTrip()?.paidAmount||0) }}</span>
+                                <span class="small fw-bold px-2 py-1 bg-success-soft rounded text-success">Collected by
+                                    Driver (Balance)</span>
+                                <span class="fw-bold text-success">₹{{ selectedTrip()?.paidAmount || 0 }}</span>
                             </div>
 
                             <div class="d-flex justify-content-between pt-2 border-top border-2"
                                 [ngClass]="selectedTrip()?.balanceAmount ? 'text-danger' : 'text-success'">
-                                <span class="fw-bold">{{ selectedTrip()?.balanceAmount ? 'Customer Outstanding Debt' :
-                                    'Customer Fully Paid Invoice' }}</span>
+                                <span class="fw-bold">{{ selectedTrip()?.balanceAmount ? 'Remaining Customer Debt' :
+                                    'Full Payment Finalized' }}</span>
                                 <span class="fw-bold fs-4">₹{{ selectedTrip()?.balanceAmount }}</span>
                             </div>
+
                         </div>
                     </div>
 

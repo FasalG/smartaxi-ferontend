@@ -27,6 +27,8 @@ export class VehiclesComponent {
     editingId = signal<string | null>(null);
     loading = false;
     searchQuery = signal<string>('');
+    selectedComplianceId = signal<string | null>(null);
+
 
     // License Plate 4-cell logic
     plateCells = [
@@ -65,8 +67,15 @@ export class VehiclesComponent {
         year: [new Date().getFullYear(), [Validators.required, Validators.min(1900)]],
         color: ['', Validators.required],
         status: ['active', Validators.required],
-        driverPaymentPercentage: [20, [Validators.required, Validators.min(0), Validators.max(100)]]
+        driverPaymentPercentage: [20, [Validators.required, Validators.min(0), Validators.max(100)]],
+        registrationDate: [''],
+        fitnessExpiry: [''],
+        insuranceExpiry: [''],
+        taxExpiry: [''],
+        permitExpiry: [''],
+        puccExpiry: ['']
     });
+
 
     constructor() {
         this.fetchVehicles();
@@ -100,7 +109,14 @@ export class VehiclesComponent {
                         color: vehicle.color || vehicle.Color,
                         status: (vehicle.status || vehicle.Status || 'active').toLowerCase(),
                         driverPaymentPercentage: Number(vehicle.driverPaymentPercentage || vehicle.DriverPaymentPercentage || 20),
+                        registrationDate: vehicle.registrationDate || vehicle['Reg Date'] || vehicle['RegDate'],
+                        fitnessExpiry: vehicle.fitnessExpiry || vehicle['Fitness'] || vehicle['FitnessExpiry'],
+                        insuranceExpiry: vehicle.insuranceExpiry || vehicle['Insurance'] || vehicle['InsuranceExpiry'],
+                        taxExpiry: vehicle.taxExpiry || vehicle['Tax valid'] || vehicle['TaxExpiry'],
+                        permitExpiry: vehicle.permitExpiry || vehicle['Permit'] || vehicle['PermitExpiry'],
+                        puccExpiry: vehicle.puccExpiry || vehicle['PUCC'] || vehicle['PUCCExpiry'],
                         tenantId: this.authService.currentUser()?._id
+
                     };
                     this.vehicleService.createVehicle(payload).subscribe({
                         next: () => this.fetchVehicles()
@@ -138,8 +154,15 @@ export class VehiclesComponent {
             year: vehicle.year,
             color: vehicle.color,
             status: vehicle.status,
-            driverPaymentPercentage: vehicle.driverPaymentPercentage || 20
+            driverPaymentPercentage: vehicle.driverPaymentPercentage || 20,
+            registrationDate: this.formatDateForInput(vehicle.registrationDate),
+            fitnessExpiry: this.formatDateForInput(vehicle.fitnessExpiry),
+            insuranceExpiry: this.formatDateForInput(vehicle.insuranceExpiry),
+            taxExpiry: this.formatDateForInput(vehicle.taxExpiry),
+            permitExpiry: this.formatDateForInput(vehicle.permitExpiry),
+            puccExpiry: this.formatDateForInput(vehicle.puccExpiry)
         });
+
 
         // Split existing plate into cells
         const parts = (vehicle.licensePlate || '').split(' ');
@@ -211,7 +234,59 @@ export class VehiclesComponent {
         });
     }
 
+    formatDateForInput(date: any): string {
+        if (!date) return '';
+        return new Date(date).toISOString().split('T')[0];
+    }
+
+    getDaysLeft(date: any): number {
+        if (!date) return 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const expiry = new Date(date);
+        expiry.setHours(0, 0, 0, 0);
+        const diffTime = expiry.getTime() - today.getTime();
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    getComplianceStatus(date: any): string {
+        if (!date) return 'N/A';
+        const days = this.getDaysLeft(date);
+        if (days < 0) return 'Expired';
+        if (days <= 30) return 'Warning';
+        return 'On time';
+    }
+
+    getComplianceClass(date: any): string {
+        if (!date) return '';
+        const days = this.getDaysLeft(date);
+        if (days < 0) return 'bg-danger text-white';
+        if (days <= 30) return 'bg-warning text-dark';
+        return 'bg-success text-white';
+    }
+
+    hasExpired(vehicle: any): boolean {
+        return this.getComplianceGlobalStatus(vehicle) === 'danger';
+    }
+
+    getComplianceGlobalStatus(vehicle: any): string {
+        if (!vehicle) return 'success';
+        const dates = [
+            vehicle.fitnessExpiry,
+            vehicle.insuranceExpiry,
+            vehicle.taxExpiry,
+            vehicle.permitExpiry,
+            vehicle.puccExpiry
+        ];
+        if (dates.some(d => d && this.getDaysLeft(d) < 0)) return 'danger';
+        if (dates.some(d => d && this.getDaysLeft(d) <= 30)) return 'warning';
+        return 'success';
+    }
+
     goToPage(p: number) {
+
+
+
         if (p >= 1 && p <= this.totalPages()) {
             this.page.set(p);
         }

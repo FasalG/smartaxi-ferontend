@@ -101,18 +101,23 @@ export class DriverDashboard implements OnInit {
   completeTripForm = this.fb.group({
     endLocation: ['', Validators.required],
     endOdometer: ['', [Validators.required, Validators.min(0)]],
-    totalAmount: [0, [Validators.required, Validators.min(0)]], // Invoice Bill
+    totalAmount: [0, [Validators.required, Validators.min(0)]], // Summed Total (Auto)
+    baseInvoiceAmount: [0, [Validators.required, Validators.min(0)]], // Base Bill
     paidAmount: [0, [Validators.required, Validators.min(0)]],  // Receipt
     driverEarnings: [0, [Validators.min(0)]],
     fuelCharges: [0, [Validators.min(0)]],
     tollParking: [0, [Validators.min(0)]],
     driverBata: [0, [Validators.min(0)]],
-    otherExpensesList: this.fb.array([]),
+    permitAmount: [0, [Validators.min(0)]],
+    // otherExpensesList: this.fb.array([]),
+
+
     tripType: ['Cash', Validators.required],
     guestComments: [''],
     paymentStatus: ['pending', Validators.required]
   });
 
+  /*
   get otherExpensesArray() {
     return this.completeTripForm.get('otherExpensesList') as FormArray;
   }
@@ -127,6 +132,8 @@ export class DriverDashboard implements OnInit {
   removeOtherExpenseRow(index: number) {
     this.otherExpensesArray.removeAt(index);
   }
+  */
+
 
   private completeFormVal = toSignal(
     this.completeTripForm.valueChanges.pipe(startWith(this.completeTripForm.value))
@@ -149,21 +156,28 @@ export class DriverDashboard implements OnInit {
   });
 
   totalOtherExpenses = computed(() => {
+    /*
     const f = this.completeFormVal();
     if (!f || !f.otherExpensesList) return 0;
     return f.otherExpensesList.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
+    */
+    return 0;
   });
+
 
   driverSettlementAmount = computed(() => {
     const f = this.completeFormVal();
     const active = this.activeTrip();
     if (!f || !active) return 0;
-    const collectedByDriver = (Number(active.advanceAmount) || 0) + (Number(f.paidAmount) || 0);
-    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + this.totalOtherExpenses();
+    const collectedByDriver = Number(f.paidAmount) || 0;
+    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + (Number(f.permitAmount) || 0) + this.totalOtherExpenses();
     const driverPayout = (Number(f.driverEarnings) || 0);
-    // Settlement: Collected Cash - Driver Expenses - Driver's Commission Earnings
+    // Settlement: Paid Cash (Closing) - Driver Expenses - Driver's Commission Earnings
+    // Admin already received Advance directly.
     return collectedByDriver - driverExpenses - driverPayout;
+
   });
+
 
   currentVehiclePercentage = computed(() => {
     const activeTrip = this.activeTrip();
@@ -188,24 +202,35 @@ export class DriverDashboard implements OnInit {
   setupFormListeners() {
     // Listen for changes in financial fields to determine tripType and earnings
     this.completeTripForm.valueChanges.subscribe(val => {
-      const amount = Number(val?.totalAmount) || 0;
-      this.calculateDriverEarnings(amount);
+      const base = Number(val?.baseInvoiceAmount) || 0;
+      const toll = Number(val?.tollParking) || 0;
+      const bata = Number(val?.driverBata) || 0;
+      const permit = Number(val?.permitAmount) || 0;
+
+      // Rule: totalAmount = Sum of all components
+      const total = base + toll + bata + permit;
+
+      this.calculateDriverEarnings(base);
 
       // Auto-determine Trip Type (Cash vs Credit)
       const balance = this.balanceAmount();
       const cust = this.activeTripCustomer();
       const tripType = (balance > 0 && cust?.isEligibleForCredit) ? 'Credit' : 'Cash';
 
-      const patchDetails: any = { tripType };
+      const patchDetails: any = {
+        tripType,
+        totalAmount: total
+      };
       if (balance === 0) {
         patchDetails.paymentStatus = 'paid';
       }
 
       this.completeTripForm.patchValue(patchDetails, { emitEvent: false });
     });
+
   }
 
-  calculateDriverEarnings(amount: number) {
+  calculateDriverEarnings(baseInvoice: number) {
     let percentage = 0.2; // default 20%
 
     const activeTrip = this.activeTrip();
@@ -224,17 +249,24 @@ export class DriverDashboard implements OnInit {
     }
 
     let patchDetails: any = {
-      driverEarnings: Number((amount * percentage).toFixed(2))
+      driverEarnings: Number((baseInvoice * percentage).toFixed(2))
     };
 
     const cust = this.activeTripCustomer();
     if (!cust || !cust.isEligibleForCredit) {
       const advance = this.activeTrip()?.advanceAmount || 0;
-      patchDetails.paidAmount = Math.max(0, amount - advance);
+      const toll = Number(this.completeTripForm.get('tollParking')?.value) || 0;
+      const bata = Number(this.completeTripForm.get('driverBata')?.value) || 0;
+      const permit = Number(this.completeTripForm.get('permitAmount')?.value) || 0;
+
+      // If NOT credit, Customer should pay (Base + Toll + Bata + Permit - Advance)
+      const totalToPay = baseInvoice + toll + bata + permit;
+      patchDetails.paidAmount = Math.max(0, totalToPay - advance);
     }
 
     this.completeTripForm.patchValue(patchDetails, { emitEvent: false });
   }
+
 
   loadInitialData() {
     this.loading.set(true);
@@ -391,12 +423,16 @@ export class DriverDashboard implements OnInit {
       fuelCharges: Number(formVal.fuelCharges),
       tollParking: Number(formVal.tollParking),
       driverBata: Number(formVal.driverBata),
-      otherExpenses: this.totalOtherExpenses(),
-      otherExpensesList: formVal.otherExpensesList as any,
+      otherExpenses: 0, // Hidden for now
+      // otherExpensesList: formVal.otherExpensesList as any,
       advanceAmount: Number(this.activeTrip()?.advanceAmount || 0),
+
       paidAmount: Number(formVal.paidAmount),
+      baseInvoiceAmount: Number(formVal.baseInvoiceAmount),
+      permitAmount: Number(formVal.permitAmount),
       totalAmount: Number(formVal.totalAmount),
       driverEarnings: Number(formVal.driverEarnings),
+
       balanceAmount: this.balanceAmount(),
       driverSettlementAmount: this.driverSettlementAmount(),
       guestComments: formVal.guestComments || '',
@@ -568,9 +604,11 @@ export class DriverDashboard implements OnInit {
     const fuel = trip.fuelCharges || 0;
     const toll = trip.tollParking || 0;
     const bata = trip.driverBata || 0;
+    const permit = trip.permitAmount || 0;
     const other = trip.otherExpenses || 0;
-    return fuel + toll + bata + other;
+    return fuel + toll + bata + permit + other;
   }
+
 
   viewTripDetail(trip: any) {
     this.selectedTrip.set(trip);
