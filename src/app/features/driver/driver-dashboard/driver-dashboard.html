@@ -128,6 +128,26 @@
                             <option value="new">+ Add New Customer</option>
                         </select>
                     </div>
+                    <!-- Customer Type Selection when New -->
+                    <div class="col-md-12" *ngIf="startTripForm.get('customerId')?.value === 'new'">
+                        <div class="bg-light p-3 rounded-4 d-flex justify-content-between align-items-center border">
+                            <div>
+                                <h6 class="fw-bold text-navy mb-1">Customer Type</h6>
+                                <p class="smaller text-secondary mb-0">
+                                    {{ startTripForm.get('isGuest')?.value ? 'Guest: One-time trip, no credit.' :
+                                    'Long-term: Saved to DB, credit-eligible.' }}
+                                </p>
+                            </div>
+                            <div class="form-check form-switch fs-5">
+                                <input class="form-check-input cursor-pointer" type="checkbox" formControlName="isGuest"
+                                    id="isGuestToggle">
+                                <label class="form-check-label small fw-bold text-navy ms-2" for="isGuestToggle">
+                                    {{ startTripForm.get('isGuest')?.value ? 'GUEST' : 'LONG-TERM' }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="col-md-6" *ngIf="startTripForm.get('customerId')?.value === 'new'">
                         <label class="form-label-premium">New Customer Name</label>
                         <input formControlName="newCustomerName" type="text" class="form-control-premium"

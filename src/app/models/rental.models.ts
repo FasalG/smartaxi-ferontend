@@ -14,7 +14,9 @@ export interface Customer {
     address?: string;
     isEligibleForCredit?: boolean;
     creditPeriodDays?: number;
+    isGuest?: boolean;
     tenantId?: any;
+
     createdAt?: string;
     updatedAt?: string;
 }

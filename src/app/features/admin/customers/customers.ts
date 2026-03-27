@@ -31,7 +31,7 @@ export class CustomersComponent implements OnInit {
 
     filteredCustomers = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
-        const all = this.customers();
+        const all = this.customers().filter(c => !c.isGuest);
         if (!query) return all;
         return all.filter(c =>
             c.name?.toLowerCase().includes(query) ||
@@ -39,6 +39,7 @@ export class CustomersComponent implements OnInit {
             c.email?.toLowerCase().includes(query)
         );
     });
+
 
     // History View
     showHistory = signal(false);

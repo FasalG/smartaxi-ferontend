@@ -95,8 +95,10 @@ export class DriverDashboard implements OnInit {
     newCustomerAddress: [''],
     startLocation: ['', Validators.required],
     startOdometer: ['', [Validators.required, Validators.min(0)]],
+    isGuest: [true], // Default to Guest for manual dispatch
     notes: ['']
   });
+
 
   completeTripForm = this.fb.group({
     endLocation: ['', Validators.required],
@@ -355,8 +357,11 @@ export class DriverDashboard implements OnInit {
         name: formVal.newCustomerName as string,
         phone: formVal.newCustomerPhone as string,
         email: formVal.newCustomerEmail as string,
-        address: formVal.newCustomerAddress as string
+        address: formVal.newCustomerAddress as string,
+        isGuest: formVal.isGuest,
+        isEligibleForCredit: !formVal.isGuest // Guests are never eligible for credit
       };
+
       this.customerService.add(newCustomer as any).subscribe({
         next: (res) => {
           processTrip(res._id as string, res.name);
