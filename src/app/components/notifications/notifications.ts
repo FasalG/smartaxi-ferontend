@@ -10,11 +10,11 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="position-fixed" style="bottom: 25px; right: 25px; z-index: 1050;" *ngIf="showBell()">
+    <div class="position-fixed" style="bottom: 100px; right: 25px; z-index: 1050;" *ngIf="showBell()">
       <div class="position-relative">
         <button class="btn btn-light bg-white rounded-circle shadow-lg p-2 position-relative border transition-all hover-scale" 
                 (click)="toggleOverlay()" 
-                style="width: 56px; height: 56px;justify-content: center;
+                style="width: 40px; height: 40px;justify-content: center;
                       align-items: center;
                       display: flex;
                       padding: 0 !important;">

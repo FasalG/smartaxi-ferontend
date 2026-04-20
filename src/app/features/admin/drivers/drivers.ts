@@ -48,12 +48,12 @@ export class DriversComponent {
     emailVerifyLoading = signal<boolean>(false);
     phoneVerifyLoading = signal<boolean>(false);
 
-    // New computed signal for save button - Enables if Name, Email, Phone are valid AND (Email OR Phone is verified)
-    canSave = computed(() => {
-        const hasVerification = this.isEmailVerified() || this.isPhoneVerified();
-        const essentialFieldsValid = this.f.name.valid && this.f.email.valid && this.f.phone.valid;
-        return hasVerification && essentialFieldsValid && !this.loading;
-    });
+    // Updated reactive check for save button - Removed hasVerification requirement
+    canSave(): boolean {
+        const formValid = this.driverForm.valid;
+        const passwordValid = this.isEditing ? true : (this.f.password.value && this.f.password.value.length >= 6);
+        return !!(formValid && passwordValid && !this.loading);
+    }
 
 
     private recaptchaVerifier: any;
@@ -91,6 +91,14 @@ export class DriversComponent {
 
     constructor() {
         this.fetchDrivers();
+
+        // Reset verification if user changes values after verifying
+        this.driverForm.get('email')?.valueChanges.subscribe(() => {
+            if (!this.loading && !this.isEditing) this.isEmailVerified.set(false);
+        });
+        this.driverForm.get('phone')?.valueChanges.subscribe(() => {
+            if (!this.loading && !this.isEditing) this.isPhoneVerified.set(false);
+        });
     }
 
     get f() { return this.driverForm.controls; }
@@ -303,7 +311,7 @@ export class DriversComponent {
             phone: this.f.phone.value,
             role: 'driver',
             tenantId: this.authService.currentUser()?._id,
-            isVerified: true
+            isVerified: this.isEmailVerified() || this.isPhoneVerified()
         };
 
         if (this.f.password.value) {

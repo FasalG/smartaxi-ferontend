@@ -618,6 +618,7 @@ export class DriverDashboard implements OnInit {
   viewTripDetail(trip: any) {
     this.selectedTrip.set(trip);
     this.showTripDetail.set(true);
+    document.body.style.overflow = 'hidden';
   }
 
   mathAbs(n: number | undefined): number {
@@ -628,5 +629,6 @@ export class DriverDashboard implements OnInit {
     this.showTripDetail.set(false);
     this.showAdjustmentUI.set(false);
     this.selectedTrip.set(null);
+    document.body.style.overflow = 'auto';
   }
 }

@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://smartaxi-backend.onrender.com/api'
+    apiUrl: 'https://43.205.208.136.sslip.io/smart'
 };

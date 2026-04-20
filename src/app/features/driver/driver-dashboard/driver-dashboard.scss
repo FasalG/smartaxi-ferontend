@@ -222,36 +222,85 @@
     /* Modal Overlay & Detail View */
     .modal-overlay {
         position: fixed;
+        margin-top: 0px !important;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(4px);
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(8px);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 1000;
+        z-index: 1050;
         padding: 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+
+        @media (max-width: 576px) {
+            align-items: flex-end; // Bottom sheet on mobile
+            padding: 0;
+            display: block; // Natural scrolling on mobile
+        }
     }
 
     .modal-content-premium {
         background: white;
         width: 100%;
         max-width: 600px;
-        border-radius: 28px;
+        border-radius: 24px;
         position: relative;
+        margin: auto; // Center on desktop
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh;
+
+        @media (max-width: 576px) {
+            border-radius: 32px 32px 0 0;
+            margin-top: 60px; // Ensure there's gap at the top to see the close button if it scrolls
+            max-height: none; // Let overlay handle scroll
+            min-height: 80vh;
+            position: relative;
+        }
+
+        .modal-header-sticky {
+            background: white;
+            z-index: 100;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 24px 24px 16px;
+            border-radius: 24px 24px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            @media (max-width: 576px) {
+                border-radius: 32px 32px 0 0;
+                padding: 18px 24px;
+                position: relative; // Not sticky on mobile for single scroll
+            }
+        }
+
+        .modal-body-scrolling {
+            flex-grow: 1;
+            padding: 24px;
+
+            @media (max-width: 576px) {
+                padding: 16px 20px 40px;
+                overflow: visible; // No inner scroll on mobile
+            }
+        }
     }
 
     @keyframes slideUp {
         from {
-            transform: translateY(30px) scale(0.95);
+            transform: translateY(100%);
             opacity: 0;
         }
 
         to {
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
             opacity: 1;
         }
     }

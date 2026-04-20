@@ -30,7 +30,7 @@ import { NotificationsComponent } from './components/notifications/notifications
            
               <h1 class="h5 fw-bold mb-0 text-truncate" [title]="authService.currentUser()?.companyDetails?.name || 'Rental ERP'">
             {{ authService.currentUser()?.companyDetails?.name || 'Rental ERP' }}
-          </h1>
+            </h1>
           </div>
           <button class="btn btn-sm text-white" (click)="toggleSidebar()">
             <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
