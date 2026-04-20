@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -265,7 +265,7 @@ import { AuthService } from '../../../services/auth.service';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private formBuilder = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -284,6 +284,21 @@ export class LoginComponent {
 
   constructor() {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
+  }
+
+  ngOnInit() {
+    if (this.authService.isAuthenticated()) {
+      const role = this.authService.currentUser()?.role;
+      if (role === 'superadmin') {
+        this.router.navigateByUrl('/superadmin');
+      } else if (role === 'admin') {
+        this.router.navigateByUrl('/admin');
+      } else if (role === 'driver') {
+        this.router.navigateByUrl('/driver');
+      } else {
+        this.router.navigateByUrl(this.returnUrl);
+      }
+    }
   }
 
   togglePassword() {
