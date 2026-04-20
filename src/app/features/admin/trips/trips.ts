@@ -368,6 +368,10 @@ export class TripsComponent {
             tenantId: this.authService.currentUser()?._id
         } as any;
 
+        // Strip local time string from input and parse into strict ISO format to avoid advancing timezones
+        if (payload.startTime) payload.startTime = new Date(payload.startTime).toISOString();
+        if (payload.endTime) payload.endTime = new Date(payload.endTime).toISOString();
+
         const request = this.isEditing()
             ? this.tripService.updateTrip(this.editingId()!, payload)
             : this.tripService.createTrip(payload);
