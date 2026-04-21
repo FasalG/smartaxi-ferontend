@@ -137,9 +137,13 @@ export class DriverDashboard implements OnInit {
   */
 
 
-  private completeFormVal = toSignal(
-    this.completeTripForm.valueChanges.pipe(startWith(this.completeTripForm.value))
-  );
+  // Manual trigger for financial signal since forms are patched with {emitEvent: false}
+  private financialUpdateTrigger = signal(0);
+
+  completeFormVal = computed(() => {
+    this.financialUpdateTrigger(); // Dependency
+    return this.completeTripForm.getRawValue();
+  });
 
   totalKm = computed(() => {
     const start = this.activeTrip()?.startOdometer || 0;
@@ -158,26 +162,28 @@ export class DriverDashboard implements OnInit {
   });
 
   totalOtherExpenses = computed(() => {
-    /*
-    const f = this.completeFormVal();
-    if (!f || !f.otherExpensesList) return 0;
-    return f.otherExpensesList.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
-    */
     return 0;
   });
-
 
   driverSettlementAmount = computed(() => {
     const f = this.completeFormVal();
     const active = this.activeTrip();
     if (!f || !active) return 0;
-    const collectedByDriver = Number(f.paidAmount) || 0;
-    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + (Number(f.permitAmount) || 0) + this.totalOtherExpenses();
-    const driverPayout = (Number(f.driverEarnings) || 0);
-    // Settlement: Paid Cash (Closing) - Driver Expenses - Driver's Commission Earnings
-    // Admin already received Advance directly.
-    return collectedByDriver - driverExpenses - driverPayout;
 
+    // collectedByDriver is strictly what the driver collected at the end (paidAmount)
+    const collectedByDriver = Number(f.paidAmount) || 0;
+
+    // Expenses: Driver pays these out of pocket or from collection
+    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + (Number(f.permitAmount) || 0) + this.totalOtherExpenses();
+
+    // Commission/Payout: Driver takes this for himself
+    const driverPayout = Number(f.driverEarnings) || 0;
+
+    // Settlement: Collected Cash - Expenses Paid - Earnings Taken
+    // Result is what is handed over to Admin (or Refund if negative)
+    const settlement = collectedByDriver - driverExpenses - driverPayout;
+    
+    return Number(settlement.toFixed(2));
   });
 
 
@@ -202,71 +208,54 @@ export class DriverDashboard implements OnInit {
   }
 
   setupFormListeners() {
-    // Listen for changes in financial fields to determine tripType and earnings
-    this.completeTripForm.valueChanges.subscribe(val => {
-      const base = Number(val?.baseInvoiceAmount) || 0;
-      const toll = Number(val?.tollParking) || 0;
-      const bata = Number(val?.driverBata) || 0;
-      const permit = Number(val?.permitAmount) || 0;
-
-      // Rule: totalAmount = Sum of all components
-      const total = base + toll + bata + permit;
-
-      this.calculateDriverEarnings(base);
-
-      // Auto-determine Trip Type (Cash vs Credit)
-      const balance = this.balanceAmount();
-      const cust = this.activeTripCustomer();
-      const tripType = (balance > 0 && cust?.isEligibleForCredit) ? 'Credit' : 'Cash';
-
-      const patchDetails: any = {
-        tripType,
-        totalAmount: total
-      };
-      if (balance === 0) {
-        patchDetails.paymentStatus = 'paid';
-      }
-
-      this.completeTripForm.patchValue(patchDetails, { emitEvent: false });
+    // Listen for any change and recalculate the entire financial picture
+    this.completeTripForm.valueChanges.subscribe(() => {
+      this.recalculateFinancials();
     });
-
   }
 
-  calculateDriverEarnings(baseInvoice: number) {
-    let percentage = 0.2; // default 20%
+  recalculateFinancials() {
+    const f = this.completeTripForm.getRawValue();
+    const active = this.activeTrip();
+    if (!active) return;
 
-    const activeTrip = this.activeTrip();
-    if (activeTrip && activeTrip.vehicleId) {
-      let vehIdStr = '';
-      if (typeof activeTrip.vehicleId === 'object' && activeTrip.vehicleId !== null) {
-        vehIdStr = activeTrip.vehicleId._id || activeTrip.vehicleId.id || '';
-      } else {
-        vehIdStr = activeTrip.vehicleId;
-      }
+    const base = Number(f.baseInvoiceAmount) || 0;
+    const toll = Number(f.tollParking) || 0;
+    const bata = Number(f.driverBata) || 0;
+    const permit = Number(f.permitAmount) || 0;
+    const advance = Number(active.advanceAmount) || 0;
 
-      const vehicle = this.vehicles().find(v => v._id === vehIdStr);
-      if (vehicle && vehicle.driverPaymentPercentage !== undefined) {
-        percentage = (Number(vehicle.driverPaymentPercentage) || 0) / 100;
-      }
-    }
+    // 1. Rule: Total Bill = Rental + Toll + Bata + Permit
+    const total = base + toll + bata + permit;
 
-    let patchDetails: any = {
-      driverEarnings: Number((baseInvoice * percentage).toFixed(2))
-    };
+    // 2. Driver Earnings = % of Rental Amount
+    const percentage = this.currentVehiclePercentage() / 100;
+    const earnings = Number((base * percentage).toFixed(2));
 
+    // 3. Paid Amount & Trip Type
     const cust = this.activeTripCustomer();
-    if (!cust || !cust.isEligibleForCredit) {
-      const advance = this.activeTrip()?.advanceAmount || 0;
-      const toll = Number(this.completeTripForm.get('tollParking')?.value) || 0;
-      const bata = Number(this.completeTripForm.get('driverBata')?.value) || 0;
-      const permit = Number(this.completeTripForm.get('permitAmount')?.value) || 0;
+    let paidAmount = Number(f.paidAmount);
 
-      // If NOT credit, Customer should pay (Base + Toll + Bata + Permit - Advance)
-      const totalToPay = baseInvoice + toll + bata + permit;
-      patchDetails.paidAmount = Math.max(0, totalToPay - advance);
+    // If customer is NOT eligible for credit (Guest), they must pay everything minus advance
+    if (!cust || !cust.isEligibleForCredit) {
+      paidAmount = Math.max(0, total - advance);
     }
 
-    this.completeTripForm.patchValue(patchDetails, { emitEvent: false });
+    const balance = Math.max(0, total - (advance + paidAmount));
+    const tripType = (balance > 0 && cust?.isEligibleForCredit) ? 'Credit' : 'Cash';
+    const paymentStatus = balance === 0 ? 'paid' : 'pending';
+
+    // 4. Update Form
+    this.completeTripForm.patchValue({
+      totalAmount: total,
+      driverEarnings: earnings,
+      paidAmount: paidAmount,
+      tripType: tripType,
+      paymentStatus: paymentStatus as any
+    }, { emitEvent: false });
+
+    // 5. Poke the financial signal so the summary UI updates
+    this.financialUpdateTrigger.update(n => n + 1);
   }
 
 

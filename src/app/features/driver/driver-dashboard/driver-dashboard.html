@@ -384,7 +384,7 @@
                         <div class="row text-center gy-3">
                             <div class="col-6 col-md-2">
                                 <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Total Bill</p>
-                                <h4 class="fw-bold mb-0">₹{{ completeTripForm.get('totalAmount')?.value || 0 }}</h4>
+                                <h4 class="fw-bold mb-0">₹{{ completeFormVal()?.totalAmount || 0 }}</h4>
                             </div>
                             <div class="col-6 col-md-2">
                                 <p class="smaller text-white-50 mb-1 uppercase tracking-widest text-warning">Customer
@@ -396,17 +396,17 @@
                                 </p>
                                 <h4 class="fw-bold mb-0 text-success">
                                     + ₹{{ (activeTrip()?.advanceAmount || 0) +
-                                    (completeTripForm.get('paidAmount')?.value || 0) }}
+                                    (completeFormVal()?.paidAmount || 0) }}
                                 </h4>
                             </div>
                             <div class="col-6 col-md-2">
                                 <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Outgoings (Exp+Pay)</p>
                                 <h4 class="fw-bold mb-0 text-danger">
-                                    - ₹{{ (completeTripForm.get('fuelCharges')?.value || 0) +
-                                    (completeTripForm.get('tollParking')?.value || 0) +
-                                    (completeTripForm.get('driverBata')?.value || 0) +
-                                    (completeTripForm.get('permitAmount')?.value || 0) +
-                                    (completeTripForm.get('driverEarnings')?.value || 0) + totalOtherExpenses() }}
+                                    - ₹{{ (completeFormVal()?.fuelCharges || 0) +
+                                    (completeFormVal()?.tollParking || 0) +
+                                    (completeFormVal()?.driverBata || 0) +
+                                    (completeFormVal()?.permitAmount || 0) +
+                                    (completeFormVal()?.driverEarnings || 0) + totalOtherExpenses() }}
                                 </h4>
                             </div>
 
