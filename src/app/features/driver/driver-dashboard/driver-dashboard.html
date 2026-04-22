@@ -129,7 +129,7 @@
                         <label class="form-label-premium">Customer</label>
                         <select formControlName="customerId" class="form-control-premium">
                             <option value="">Select Customer...</option>
-                            <option *ngFor="let c of customers()" [value]="c._id">{{ c.name }}</option>
+                            <option *ngFor="let c of displayCustomers()" [value]="c._id">{{ c.name }}</option>
                             <option value="new">+ Add New Customer</option>
                         </select>
                     </div>
@@ -223,7 +223,7 @@
                         <label class="form-label-premium">Customer</label>
                         <select formControlName="customerId" class="form-control-premium">
                             <option value="">Select Customer...</option>
-                            <option *ngFor="let c of customers()" [value]="c._id">{{ c.name }}</option>
+                            <option *ngFor="let c of displayCustomers()" [value]="c._id">{{ c.name }}</option>
                             <option value="new">+ Add New Customer</option>
                         </select>
                     </div>

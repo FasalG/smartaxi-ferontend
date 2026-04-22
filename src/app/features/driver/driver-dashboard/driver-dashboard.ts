@@ -63,6 +63,7 @@ export class DriverDashboard implements OnInit {
 
   vehicles = signal<Vehicle[]>([]);
   customers = signal<Customer[]>([]);
+  displayCustomers = computed(() => this.customers().filter(c => !c.isGuest));
   selectedTrip = signal<Trip | null>(null);
 
   activeTripCustomer = computed(() => {
