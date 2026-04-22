@@ -41,7 +41,11 @@ export const routes: Routes = [
   {
     path: 'driver',
     canActivate: [authGuard, roleGuard(['driver'])],
-    loadComponent: () => import('./features/driver/driver-dashboard/driver-dashboard').then(m => m.DriverDashboard),
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./features/driver/driver-dashboard/driver-dashboard').then(m => m.DriverDashboard) },
+      { path: 'history', loadComponent: () => import('./features/driver/trip-history/trip-history').then(m => m.TripHistoryComponent) }
+    ]
   },
   { path: '**', redirectTo: 'login' }
 ];

@@ -26,7 +26,7 @@
 
     <div class="row g-4">
         <!-- LEFT PANEL: ACTION AREA -->
-        <div class="col-lg-8">
+        <div class="col-12">
 
             <!-- UPCOMING ASSIGNMENTS (Scheduled) -->
             <div *ngIf="scheduledTrips().length > 0 && !activeTrip()" class="mb-4">
@@ -598,7 +598,7 @@
                         <div class="row text-center gy-3">
                             <div class="col-6 col-md-2">
                                 <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Total Bill</p>
-                                <h4 class="fw-bold mb-0">₹{{ completeFormVal()?.totalAmount || 0 }}</h4>
+                                <h4 class="fw-bold mb-0">₹{{ completeFormVal().totalAmount || 0 }}</h4>
                             </div>
                             <div class="col-6 col-md-2">
                                 <p class="smaller text-white-50 mb-1 uppercase tracking-widest text-warning">Customer
@@ -610,17 +610,17 @@
                                 </p>
                                 <h4 class="fw-bold mb-0 text-success">
                                     + ₹{{ (activeTrip()?.advanceAmount || 0) +
-                                    (completeFormVal()?.paidAmount || 0) }}
+                                    (completeFormVal().paidAmount || 0) }}
                                 </h4>
                             </div>
                             <div class="col-6 col-md-2">
                                 <p class="smaller text-white-50 mb-1 uppercase tracking-widest">Outgoings (Exp+Pay)</p>
                                 <h4 class="fw-bold mb-0 text-danger">
-                                    - ₹{{ (completeFormVal()?.fuelCharges || 0) +
-                                    (completeFormVal()?.tollParking || 0) +
-                                    (completeFormVal()?.driverBata || 0) +
-                                    (completeFormVal()?.permitAmount || 0) +
-                                    (completeFormVal()?.driverEarnings || 0) + totalOtherExpenses() }}
+                                    - ₹{{ (completeFormVal().fuelCharges || 0) +
+                                    (completeFormVal().tollParking || 0) +
+                                    (completeFormVal().driverBata || 0) +
+                                    (completeFormVal().permitAmount || 0) +
+                                    (completeFormVal().driverEarnings || 0) + totalOtherExpenses() }}
                                 </h4>
                             </div>
 
@@ -651,7 +651,7 @@
         </div>
 
         <!-- RIGHT PANEL -->
-        <div class="col-lg-4">
+        <!-- <div class="col-lg-4">
             <div class="card border-0 shadow-sm p-4 mb-4">
                 <h5 class="fw-bold text-navy mb-4">Quick Stats</h5>
                 <div class="d-flex flex-column gap-3">
@@ -736,7 +736,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- TRIP DETAIL OVERLAY -->
         <div *ngIf="showTripDetail()" class="modal-overlay animate-fade-in">
@@ -771,25 +771,44 @@
                         </div>
 
                         <div class="col-12 border-top pt-3">
-                            <div class="row text-center gy-3">
-                                <div class="col-4">
-                                    <label class="form-label-premium">Vehicle</label>
-                                    <div class="fw-bold text-navy">{{ selectedTrip()?.vehicleId?.licensePlate }}</div>
-                                    <div class="smaller text-secondary">{{ selectedTrip()?.vehicleId?.make }} {{
-                                        selectedTrip()?.vehicleId?.model }}</div>
+                            <div class="row gy-3">
+                                <div class="col-6">
+                                    <label class="form-label-premium">Start Location</label>
+                                    <div class="fw-bold text-navy truncate-1" [title]="selectedTrip()?.startLocation">
+                                        <i class="bi bi-geo-alt-fill text-success me-1"></i>
+                                        {{ selectedTrip()?.startLocation }}
+                                    </div>
                                 </div>
-                                <div class="col-4">
-                                    <label class="form-label-premium">Total KM</label>
-                                    <div class="fw-bold text-navy">{{ selectedTrip()?.totalKm }} KM</div>
-                                    <div class="smaller text-secondary">{{ selectedTrip()?.startOdometer }} → {{
-                                        selectedTrip()?.endOdometer }}</div>
+                                <div class="col-6 text-end">
+                                    <label class="form-label-premium">End Location</label>
+                                    <div class="fw-bold text-navy truncate-1" [title]="selectedTrip()?.endLocation || 'Ongoing'">
+                                        {{ selectedTrip()?.endLocation || 'Ongoing' }}
+                                        <i class="bi bi-geo-alt-fill text-danger ms-1"></i>
+                                    </div>
                                 </div>
-                                <div class="col-4">
-                                    <label class="form-label-premium">Payment</label>
-                                    <div class="badge rounded-pill d-block"
-                                        [ngClass]="selectedTrip()?.status === 'in-progress' ? 'bg-info' : (selectedTrip()?.paymentStatus === 'paid' ? 'bg-success' : 'bg-warning')">
-                                        {{ selectedTrip()?.status === 'in-progress' ? 'TRIP IN PROGRESS' :
-                                        (selectedTrip()?.paymentStatus === 'paid' ? 'COMPLETED' : 'PENDING') }}
+
+                                <div class="col-12 mt-2 border-top pt-2">
+                                    <div class="row text-center gy-3">
+                                        <div class="col-4">
+                                            <label class="form-label-premium">Vehicle</label>
+                                            <div class="fw-bold text-navy">{{ selectedTrip()?.vehicleId?.licensePlate }}</div>
+                                            <div class="smaller text-secondary">{{ selectedTrip()?.vehicleId?.make }} {{
+                                                selectedTrip()?.vehicleId?.model }}</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label-premium">Total KM</label>
+                                            <div class="fw-bold text-navy">{{ selectedTrip()?.totalKm }} KM</div>
+                                            <div class="smaller text-secondary">{{ selectedTrip()?.startOdometer }} → {{
+                                                selectedTrip()?.endOdometer }}</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label-premium">Payment</label>
+                                            <div class="badge rounded-pill d-block"
+                                                [ngClass]="selectedTrip()?.status === 'in-progress' ? 'bg-info' : (selectedTrip()?.paymentStatus === 'paid' ? 'bg-success' : 'bg-warning')">
+                                                {{ selectedTrip()?.status === 'in-progress' ? 'TRIP IN PROGRESS' :
+                                                (selectedTrip()?.paymentStatus === 'paid' ? 'COMPLETED' : 'PENDING') }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

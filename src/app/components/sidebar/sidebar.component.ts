@@ -141,7 +141,8 @@ export class SidebarComponent implements OnInit {
       ];
     } else if (role === 'driver') {
       return [
-        { route: 'driver', label: 'Dashboard', icon: 'LayoutDashboard' }
+        { route: 'driver/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
+        { route: 'driver/history', label: 'Trip History', icon: 'Calendar' }
       ];
     } else {
       return [
