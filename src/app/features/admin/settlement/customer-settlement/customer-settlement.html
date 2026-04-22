@@ -4,67 +4,85 @@
         <div class="container-fluid">
             <h4 class="fw-bold text-navy mb-4">Customer Settlement Hub</h4>
             <form [formGroup]="filterForm" class="row g-3 align-items-end">
-                <div class="col-md-4">
+                <div class="col-sm-6 col-lg-4 col-xl-4">
                     <label class="form-label small text-secondary fw-bold">Select Client/Customer</label>
                     <select formControlName="customerId" class="form-select border-0 shadow-sm rounded-pill px-3">
                         <option value="">All Credit Customers</option>
                         <option *ngFor="let c of customers()" [value]="c._id">{{ c.name }} ({{ c.phone }})</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">From Date</label>
                     <input type="date" formControlName="startDate" class="form-control border-0 shadow-sm rounded-pill px-3">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">To Date</label>
                     <input type="date" formControlName="endDate" class="form-control border-0 shadow-sm rounded-pill px-3">
                 </div>
-                <div class="col-md-4 d-flex gap-2">
-                    <button (click)="exportToExcel()" class="btn btn-navy rounded-pill px-4 flex-grow-1 btn-export">
-                        <i class="bi bi-file-earmark-excel me-2"></i> Export Excel
-                    </button>
-                    <button (click)="printReport()" class="btn btn-light rounded-pill px-4 flex-grow-1 border">
-                        <i class="bi bi-printer me-2"></i> Print Statement
-                    </button>
+                <div class="col-12 col-xl-4 align-self-end">
+                    <div class="d-flex gap-2">
+                        <button (click)="refreshData()" [disabled]="loading()" class="btn btn-primary rounded-pill px-4 flex-grow-1 shadow-sm">
+                            <i class="bi" [ngClass]="loading() ? 'bi-arrow-repeat spin' : 'bi-download'"></i> 
+                            {{ loading() ? 'Loading' : 'Pull Records' }}
+                        </button>
+                        <div class="d-flex gap-2">
+                            <button (click)="exportToExcel()" class="btn btn-outline-success rounded-pill px-3 border shadow-sm" title="Export Excel">
+                                <i class="bi bi-file-earmark-excel"></i>
+                            </button>
+                            <button (click)="exportToPDF()" class="btn btn-outline-danger rounded-pill px-3 border shadow-sm" title="Export PDF">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </button>
+                            <button (click)="printReport()" class="btn btn-outline-secondary rounded-pill px-3 border shadow-sm" title="Print Statement">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- REPORT CONTENT -->
-    <div class="container-fluid p-4">
-        <div class="report-paper mx-auto">
+    <div class="container-fluid p-4 position-relative">
+        <div *ngIf="loading()" class="loading-overlay d-flex justify-content-center align-items-center rounded-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div class="report-paper mx-auto" id="printableReport">
             <!-- SmartTaxi Header -->
-            <div class="smart-taxi-header d-flex justify-content-between align-items-<ctrl94>">
+            <div class="smart-taxi-header d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="brand-logo mb-2">Smart<span>Taxi</span></div>
-                    <div class="small text-secondary">Advanced Fleet Management</div>
-                    <div class="small fw-bold mt-4 text-navy">OUTSTANDING CREDIT STATEMENT</div>
+                    <div class="brand-logo mb-1">Smart<span>Taxi</span></div>
+                    <div class="small text-secondary">Premium Transportation Solutions</div>
+                    <div class="small fw-bold mt-2 text-navy">OUTSTANDING CREDIT STATEMENT</div>
                 </div>
                 <div class="text-end">
-                    <div class="h5 fw-bold mb-1">{{ selectedCustomerObj()?.name || 'All Clients' }}</div>
-                    <div class="small text-secondary fw-semibold">{{ selectedCustomerObj()?.phone }}</div>
-                    <div class="small text-secondary">{{ selectedCustomerObj()?.address }}</div>
-                    <div class="small text-navy mt-3">Statement Date: {{ today | date:'mediumDate' }}</div>
+                    <div class="h5 fw-bold mb-1 text-navy">{{ selectedCustomerObj()?.name || 'Report: All Credit Clients' }}</div>
+                    <div class="small text-secondary fw-semibold mb-1" *ngIf="selectedCustomerObj()">{{ selectedCustomerObj()?.phone }}</div>
+                    <div class="smaller text-secondary" *ngIf="selectedCustomerObj()">{{ selectedCustomerObj()?.address }}</div>
+                    <div class="small fw-bold text-navy mt-2 border-top pt-1">
+                        Period: {{ filterForm.value.startDate | date:'MMM d, y' }} - {{ filterForm.value.endDate | date:'MMM d, y' }}
+                    </div>
                 </div>
             </div>
 
             <!-- Summary Bar -->
-            <div class="row g-3 mb-5">
-                <div class="col-4">
-                    <div class="p-4 bg-light rounded-4 text-center">
+            <div class="row g-2 mb-5">
+                <div class="col-6 col-md-4">
+                    <div class="p-3 bg-light rounded-4 text-center h-100">
                         <div class="smaller text-secondary uppercase fw-bold mb-1">Total Billed</div>
                         <div class="h4 fw-bold mb-0 text-navy">₹{{ stats().billed }}</div>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="p-4 bg-light rounded-4 text-center">
+                <div class="col-6 col-md-4">
+                    <div class="p-3 bg-light rounded-4 text-center h-100">
                         <div class="smaller text-secondary uppercase fw-bold mb-1">Total Received</div>
                         <div class="h4 fw-bold mb-0 text-success">₹{{ stats().paid }}</div>
                     </div>
                 </div>
-                <div class="col-4">
-                    <div class="p-4 bg-warning-soft rounded-4 text-center border border-warning border-opacity-25">
+                <div class="col-12 col-md-4">
+                    <div class="p-3 bg-warning-soft rounded-4 text-center h-100 border border-warning border-opacity-25">
                         <div class="smaller text-warning uppercase fw-bold mb-1">Outstanding Balance</div>
                         <div class="h4 fw-bold mb-0">₹{{ stats().balance }}</div>
                     </div>
@@ -88,7 +106,7 @@
                     <tbody>
                         <tr *ngFor="let trip of filteredTrips()">
                             <td>{{ trip.startTime | date:'dd MMM yyyy' }}</td>
-                            <td class="fw-bold">VOC-{{ trip._id.slice(-6).toUpperCase() }}</td>
+                            <td class="fw-bold">VOC-{{ trip?._id?.slice(-6)?.toUpperCase() || 'N/A' }}</td>
                             <td>
                                 <div class="fw-semibold">{{ trip.vehicleId?.licensePlate || 'General' }}</div>
                                 <div class="smaller text-secondary">{{ trip.startLocation }} to {{ trip.endLocation || 'N/A' }}</div>
@@ -99,7 +117,7 @@
                             <td class="text-center">
                                 <span class="badge rounded-pill px-3 py-1" 
                                     [ngClass]="trip.paymentStatus === 'paid' ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'">
-                                    {{ trip.paymentStatus?.toUpperCase() }}
+                                    {{ trip?.paymentStatus?.toUpperCase() || 'PENDING' }}
                                 </span>
                             </td>
                         </tr>

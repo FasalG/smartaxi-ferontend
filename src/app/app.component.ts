@@ -17,7 +17,7 @@ import { NotificationsComponent } from './components/notifications/notifications
   template: `
     <div class="d-flex overflow-hidden" style="height: 100vh;">
       <!-- Desktop Sidebar -->
-      <app-sidebar *ngIf="showSidebar" class="h-100 d-none d-lg-block"></app-sidebar>
+      <app-sidebar *ngIf="showSidebar" class="h-100 d-none d-lg-block flex-shrink-0" style="width: 220px;"></app-sidebar>
 
       <main class="flex-grow-1 overflow-auto d-flex flex-column position-relative" [style.background-color]="showSidebar ? 'var(--background)' : 'transparent'">
         

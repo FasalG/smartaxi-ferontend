@@ -904,6 +904,26 @@
                                     <span class="fw-bold fs-4">₹{{ selectedTrip()?.balanceAmount }}</span>
                                 </div>
 
+                                <!-- LEDGER SUMMARY (For Clarity) -->
+                                <div class="mt-4 pt-3 border-top border-secondary border-opacity-10">
+                                    <p class="smaller text-navy fw-bold uppercase tracking-widest mb-2">Settlement Summary (Handover)</p>
+                                    <div class="p-3 rounded-4 bg-white border border-light-subtle shadow-sm">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="small text-secondary">Total Recvd (Adv + Paid)</span>
+                                            <span class="small fw-bold">₹{{ (selectedTrip()?.paidAmount || 0) + (selectedTrip()?.advanceAmount || 0) }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 text-danger">
+                                            <span class="small">Expenses & Commissions</span>
+                                            <span class="small fw-bold">- ₹{{ getTripExpenses(selectedTrip()!) + (selectedTrip()?.driverEarnings || 0) }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between pt-2 border-top mt-2" 
+                                             [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) >= 0 ? 'text-success' : 'text-warning'">
+                                            <span class="fw-bold">{{ (selectedTrip()?.driverSettlementAmount || 0) >= 0 ? 'HANDOVER TO ADMIN' : 'REFUND DUE FROM ADMIN' }}</span>
+                                            <span class="fw-bold fs-5">₹{{ mathAbs(selectedTrip()?.driverSettlementAmount) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 

@@ -4,81 +4,114 @@
         <div class="container-fluid">
             <h4 class="fw-bold text-navy mb-4">Driver Settlement Hub</h4>
             <form [formGroup]="filterForm" class="row g-3 align-items-end">
-                <div class="col-md-3">
+                <div class="col-sm-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">Select Driver</label>
                     <select formControlName="driverId" class="form-select border-0 shadow-sm rounded-pill px-3">
                         <option value="">All Drivers</option>
                         <option *ngFor="let d of drivers()" [value]="d._id">{{ d.name }}</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-sm-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">Specific Vehicle</label>
                     <select formControlName="vehicleId" class="form-select border-0 shadow-sm rounded-pill px-3">
                         <option value="">All Vehicles</option>
                         <option *ngFor="let v of vehicles()" [value]="v._id">{{ v.make }} {{ v.model }} ({{ v.licensePlate }})</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-lg-2 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">From Date</label>
                     <input type="date" formControlName="startDate" class="form-control border-0 shadow-sm rounded-pill px-3">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-lg-2 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">To Date</label>
                     <input type="date" formControlName="endDate" class="form-control border-0 shadow-sm rounded-pill px-3">
                 </div>
-                <div class="col-md-2 d-flex gap-2">
-                    <button (click)="exportToExcel()" class="btn btn-navy rounded-pill px-3 flex-grow-1 btn-export">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
-                    </button>
-                    <button (click)="printReport()" class="btn btn-light rounded-pill px-3 flex-grow-1 border">
-                        <i class="bi bi-printer me-1"></i> Print
-                    </button>
+                <div class="col-12 col-xl-4 align-self-end">
+                    <div class="d-flex gap-2">
+                        <button (click)="refreshData()" [disabled]="loading()" class="btn btn-primary rounded-pill px-4 flex-grow-1 shadow-sm">
+                            <i class="bi" [ngClass]="loading() ? 'bi-arrow-repeat spin' : 'bi-download'"></i> 
+                            {{ loading() ? 'Loading' : 'Fetch Records' }}
+                        </button>
+                        <div class="d-flex gap-2">
+                            <button (click)="exportToExcel()" class="btn btn-outline-success rounded-pill px-3 border shadow-sm" title="Export Excel">
+                                <i class="bi bi-file-earmark-excel"></i>
+                            </button>
+                            <button (click)="exportToPDF()" class="btn btn-outline-danger rounded-pill px-3 border shadow-sm" title="Export PDF">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </button>
+                            <button (click)="printReport()" class="btn btn-outline-secondary rounded-pill px-3 border shadow-sm" title="Print Statement">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- REPORT CONTENT -->
-    <div class="container-fluid p-4">
+    <div class="container-fluid p-4 position-relative">
+        <!-- Loading Overlay -->
+        <div *ngIf="loading()" class="loading-overlay d-flex justify-content-center align-items-center rounded-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
         <div class="report-paper mx-auto" id="printableReport">
             <!-- SmartTaxi Header -->
             <div class="smart-taxi-header d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="brand-logo mb-2">Smart<span>Taxi</span></div>
+                    <div class="brand-logo mb-1">Smart<span>Taxi</span></div>
                     <div class="small text-secondary">Premium Transportation Solutions</div>
-                    <div class="small fw-bold mt-3 text-navy">DRIVER SETTLEMENT STATEMENT</div>
+                    <div class="small fw-bold mt-2 text-navy">DRIVER SETTLEMENT STATEMENT</div>
                 </div>
                 <div class="text-end">
-                    <div class="h6 fw-bold mb-1">{{ selectedDriverObj()?.name || 'All Drivers' }}</div>
-                    <div class="small text-secondary">{{ selectedDriverObj()?.email }}</div>
-                    <div class="small text-secondary mt-2">Period: {{ filterForm.value.startDate | date:'MMM d, y' }} - {{ filterForm.value.endDate | date:'MMM d, y' }}</div>
+                    <div class="h6 fw-bold mb-1 text-navy">{{ selectedDriverObj()?.name || 'Report: All Drivers' }}</div>
+                    <div class="small text-secondary mb-1">
+                        <span class="fw-bold">Vehicle:</span> {{ selectedVehicleObj() ? (selectedVehicleObj()?.make + ' ' + selectedVehicleObj()?.model + ' [' + selectedVehicleObj()?.licensePlate + ']') : 'All Associated Vehicles' }}
+                    </div>
+                    <div class="smaller text-secondary" *ngIf="selectedDriverObj()">{{ selectedDriverObj()?.email }}</div>
+                    <div class="small fw-bold text-navy mt-2 border-top pt-1">
+                        Period: {{ filterForm.value.startDate | date:'MMM d, y' }} - {{ filterForm.value.endDate | date:'MMM d, y' }}
+                    </div>
                 </div>
             </div>
 
             <!-- Summary Bar -->
-            <div class="row g-3 mb-4">
-                <div class="col-3">
-                    <div class="p-3 bg-light rounded-3">
-                        <div class="smaller text-secondary uppercase fw-bold mb-1">Total Trips</div>
-                        <div class="h5 fw-bold mb-0">{{ stats().count }}</div>
+            <div class="row g-2 mb-4">
+                <div class="col-6 col-md">
+                    <div class="p-3 bg-light rounded-3 h-100">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Trips</div>
+                        <div class="h5 fw-bold mb-0 text-navy">{{ stats().count }}</div>
                     </div>
                 </div>
-                <div class="col-3">
-                    <div class="p-3 bg-light rounded-3">
-                        <div class="smaller text-secondary uppercase fw-bold mb-1">Cash Collected</div>
-                        <div class="h5 fw-bold mb-0">₹{{ stats().collected }}</div>
+                <div class="col-6 col-md">
+                    <div class="p-3 bg-light rounded-3 h-100">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Collected</div>
+                        <div class="h5 fw-bold mb-0 text-navy">₹{{ stats().collected }}</div>
                     </div>
                 </div>
-                <div class="col-3">
-                    <div class="p-3 bg-light rounded-3">
-                        <div class="smaller text-secondary uppercase fw-bold mb-1">Total Expenses</div>
-                        <div class="h5 fw-bold mb-0">₹{{ stats().expenses }}</div>
+                <div class="col-6 col-md">
+                    <div class="p-3 bg-light rounded-3 h-100">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Expenses</div>
+                        <div class="h5 fw-bold mb-0 text-navy text-danger">₹{{ stats().expenses }}</div>
                     </div>
                 </div>
-                <div class="col-3">
-                    <div class="p-3 rounded-3" [ngClass]="stats().net > 0 ? 'bg-warning-soft' : 'bg-success-soft'">
-                        <div class="smaller uppercase fw-bold mb-1">{{ stats().net > 0 ? 'Recv. From Driver' : 'Give to Driver' }}</div>
-                        <div class="h5 fw-bold mb-0">₹{{ mathAbs(stats().net) }}</div>
+                <div class="col-6 col-md">
+                    <div class="p-3 bg-light rounded-3 h-100">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Dr.Payment</div>
+                        <div class="h5 fw-bold mb-0 text-navy text-primary">₹{{ stats().earnings }}</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md">
+                    <div class="p-3 rounded-3 h-100 border-2 border-start" [ngClass]="stats().net >= 0 ? 'bg-warning-soft border-warning' : 'bg-success-soft border-success'">
+                        <div class="smaller uppercase fw-bold mb-1" [ngClass]="stats().net >= 0 ? 'text-warning-dark' : 'text-success-dark'">
+                            {{ stats().net >= 0 ? 'DUE FROM DRIVER' : 'GIVE TO DRIVER' }}
+                        </div>
+                        <div class="h5 fw-bold mb-0" [ngClass]="stats().net >= 0 ? 'text-warning-dark' : 'text-success-dark'">
+                            ₹{{ stats().net }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,6 +127,7 @@
                             <th class="text-end">Total Bill</th>
                             <th class="text-end">Collected</th>
                             <th class="text-end">Expenses</th>
+                            <th class="text-end">Dr.Payment</th>
                             <th class="text-end">Net Settle</th>
                             <th class="text-center">Status</th>
                         </tr>
@@ -101,16 +135,22 @@
                     <tbody>
                         <tr *ngFor="let trip of filteredTrips()">
                             <td>{{ trip.startTime | date:'dd/MM/yy' }}</td>
-                            <td class="fw-bold">#{{ trip._id.slice(-6) }}</td>
+                            <td class="fw-bold">#{{ trip?._id?.slice(-6) || 'N/A' }}</td>
                             <td>
-                                <div class="fw-semibold">{{ trip.customerName }}</div>
-                                <div class="smaller text-secondary">{{ trip.startLocation.slice(0,15) }}...</div>
+                                <div class="fw-bold text-navy">{{ trip.customerName }}</div>
+                                <div class="smaller text-secondary mt-1">
+                                    {{ trip.startLocation }} 
+                                    <span *ngIf="trip.endLocation">→ {{ trip.endLocation }}</span>
+                                </div>
                             </td>
                             <td class="text-end">₹{{ trip.totalAmount }}</td>
                             <td class="text-end">₹{{ (trip.advanceAmount || 0) + (trip.paidAmount || 0) }}</td>
-                            <td class="text-end text-danger">₹{{ getTripExpenses(trip) }}</td>
-                            <td class="text-end fw-bold" [ngClass]="trip.driverSettlementAmount > 0 ? 'text-warning' : 'text-success'">
-                                ₹{{ mathAbs(trip.driverSettlementAmount) }}
+                            <td class="text-end text-danger cursor-pointer text-decoration-underline" (click)="showExpenses(trip)" title="View Details">
+                                ₹{{ getTripExpenses(trip) }}
+                            </td>
+                            <td class="text-end text-primary">₹{{ trip.driverEarnings || 0 }}</td>
+                            <td class="text-end fw-bold" [ngClass]="(trip?.driverSettlementAmount || 0) >= 0 ? 'text-warning' : 'text-success'">
+                                ₹{{ trip?.driverSettlementAmount || 0 }}
                             </td>
                             <td class="text-center">
                                 <span class="badge rounded-pill smaller" 
@@ -125,14 +165,15 @@
                                 No trips found for the selected criteria.
                             </td>
                         </tr>
-                        <!-- Final Balance Row -->
                         <tr class="row-total" *ngIf="filteredTrips().length > 0">
-                            <td colspan="6" class="text-end py-3">FINAL SETTLEMENT BALANCE:</td>
-                            <td class="text-end py-3 h5 mb-0" [ngClass]="stats().net > 0 ? 'text-danger' : 'text-success'">
-                                ₹{{ mathAbs(stats().net) }}
+                            <td colspan="7" class="text-end py-3 fw-bold">FINAL SETTLEMENT BALANCE:</td>
+                            <td class="text-end py-3 h5 mb-0 fw-bold" [ngClass]="stats().net >= 0 ? 'text-danger' : 'text-success'">
+                                ₹{{ stats().net }}
                             </td>
                             <td class="text-center py-3">
-                                <b>{{ stats().net > 0 ? 'DUE FROM DRIVER' : 'REFUND TO DRIVER' }}</b>
+                                <span class="badge rounded-pill px-3" [ngClass]="stats().net >= 0 ? 'bg-danger' : 'bg-success'">
+                                    {{ stats().net >= 0 ? 'DUE FROM DRIVER' : 'GIVE TO DRIVER' }}
+                                </span>
                             </td>
                         </tr>
                     </tbody>
@@ -150,7 +191,57 @@
             </div>
             
             <div class="text-center mt-5 smaller text-muted pt-4 border-top">
-                Computer generated statement by SmartTaxi Management System. {{ today | date:'medium' }}
+                SmartTaxi Management Solutions • Automated Statement • Page 1 of 1
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPENSE DETAILS MODAL (Hide on Print) -->
+    <div *ngIf="selectedTripExpenses()" class="modal fade show d-block no-print" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-navy text-white py-3">
+                    <h5 class="modal-title fw-bold">Expense Breakdown</h5>
+                    <button type="button" class="btn-close btn-close-white" (click)="closeExpenses()"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="text-secondary fw-semibold">Fuel Charges</span>
+                        <span class="fw-bold text-navy">₹{{ selectedTripExpenses().fuelCharges || 0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="text-secondary fw-semibold">Toll & Parking</span>
+                        <span class="fw-bold text-navy">₹{{ selectedTripExpenses().tollParking || 0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="text-secondary fw-semibold">Driver Bata</span>
+                        <span class="fw-bold text-navy">₹{{ selectedTripExpenses().driverBata || 0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="text-secondary fw-semibold">Permit Amount</span>
+                        <span class="fw-bold text-navy">₹{{ selectedTripExpenses().permitAmount || 0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="text-secondary fw-semibold">Other Expenses</span>
+                        <span class="fw-bold text-navy">₹{{ selectedTripExpenses().otherExpenses || 0 }}</span>
+                    </div>
+                    
+                    <div *ngIf="selectedTripExpenses().otherExpensesList?.length" class="mt-4 p-3 bg-light rounded-3">
+                        <div class="smaller fw-bold text-secondary text-uppercase mb-2">Itemized Others</div>
+                        <div *ngFor="let item of selectedTripExpenses().otherExpensesList" class="d-flex justify-content-between smaller mb-1">
+                            <span>{{ item.description }}</span>
+                            <span class="fw-semibold">₹{{ item.amount }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-navy-soft rounded-3 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-navy">TOTAL EXPENSES</span>
+                        <span class="h5 fw-bold text-navy mb-0">₹{{ getTripExpenses(selectedTripExpenses()) }}</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-navy rounded-pill px-5 w-100" (click)="closeExpenses()">Close Details</button>
+                </div>
             </div>
         </div>
     </div>

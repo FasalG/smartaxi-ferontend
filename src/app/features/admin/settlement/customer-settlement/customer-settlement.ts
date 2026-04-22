@@ -5,6 +5,9 @@ import { TripService } from '../../../../services/trip.service';
 import { CustomerService } from '../../../../services/customer.service';
 import { Trip, Customer } from '../../../../models/rental.models';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-customer-settlement',
@@ -25,12 +28,21 @@ export class CustomerSettlementComponent implements OnInit {
 
   filterForm = this.fb.group({
     customerId: [''],
-    startDate: [new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]], // Last 30 days
+    startDate: [this.getStartOfMonth()],
     endDate: [new Date().toISOString().split('T')[0]]
   });
 
+  formValues = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value as any });
+
+  getStartOfMonth(): string {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+  }
+
   filteredTrips = computed(() => {
-    const filters = this.filterForm.value;
+    const filters = this.formValues();
+    if (!filters) return [];
+
     return this.allTrips().filter((trip: any) => {
       const tripDate = new Date(trip.startTime).toISOString().split('T')[0];
       const cid = typeof trip.customerId === 'object' ? trip.customerId?._id : trip.customerId;
@@ -55,7 +67,8 @@ export class CustomerSettlementComponent implements OnInit {
   });
 
   selectedCustomerObj = computed(() => {
-    return this.customers().find(c => c._id === this.filterForm.value.customerId);
+    const filters = this.formValues();
+    return this.customers().find(c => c._id === filters?.customerId);
   });
 
   ngOnInit() {
@@ -65,7 +78,12 @@ export class CustomerSettlementComponent implements OnInit {
   loadData() {
     this.loading.set(true);
     this.customerService.getAll().subscribe(c => this.customers.set(c.filter(x => x.isEligibleForCredit)));
-    this.tripService.getTrips().subscribe({
+    this.refreshData();
+  }
+
+  refreshData() {
+    this.loading.set(true);
+    this.tripService.getTrips(true).subscribe({
       next: (t) => {
         this.allTrips.set(t);
         this.loading.set(false);
@@ -89,6 +107,34 @@ export class CustomerSettlementComponent implements OnInit {
     const wb: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Customer Settlement');
     XLSX.writeFile(wb, `Customer_Statement_${this.selectedCustomerObj()?.name || 'Report'}.xlsx`);
+  }
+
+  async exportToPDF() {
+    const element = document.getElementById('printableReport');
+    if (!element) return;
+
+    this.loading.set(true);
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Customer_Statement_${this.selectedCustomerObj()?.name || 'Report'}.pdf`);
+    } catch (error) {
+      console.error('PDF Export Error:', error);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   printReport() {

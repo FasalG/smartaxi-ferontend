@@ -222,28 +222,35 @@ export class DriverDashboard implements OnInit {
     return Math.max(0, total - received);
   });
 
-  manualDriverSettlementAmount = computed(() => {
-    const f = this.manualCompleteFormVal();
-    if (!f) return 0;
-    const collectedByDriver = Number(f.paidAmount) || 0;
-    const advance = 0; // Hardcoded 0 for manual trip
-    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + (Number(f.permitAmount) || 0);
-    const driverPayout = Number(f.driverEarnings) || 0;
-    
-    // Settlement = (Cash Driver has: Advance + Paid) - Expenses - Earnings
-    const settlement = (advance + collectedByDriver) - driverExpenses - driverPayout;
-    return Number(settlement.toFixed(2));
-  });
-  
   manualOutgoings = computed(() => {
-    const f = this.manualCompleteFormVal();
-    if (!f) return 0;
+    this.financialUpdateTrigger(); // Re-run when this changes
+    const f = this.manualCompleteForm.getRawValue();
     const fuel = Number(f.fuelCharges) || 0;
     const toll = Number(f.tollParking) || 0;
     const bata = Number(f.driverBata) || 0;
     const permit = Number(f.permitAmount) || 0;
     const earnings = Number(f.driverEarnings) || 0;
     return Number((fuel + toll + bata + permit + earnings).toFixed(2));
+  });
+
+  manualDriverSettlementAmount = computed(() => {
+    this.financialUpdateTrigger(); // Re-run when this changes
+    const f = this.manualCompleteForm.getRawValue();
+    if (!f) return 0;
+    const collectedByDriver = Number(f.paidAmount) || 0;
+    const advance = 0; // Hardcoded 0 for manual trip
+    const fuel = Number(f.fuelCharges) || 0;
+    const toll = Number(f.tollParking) || 0;
+    const bata = Number(f.driverBata) || 0;
+    const permit = Number(f.permitAmount) || 0;
+    const driverPayout = Number(f.driverEarnings) || 0;
+    
+    // Total expenses that driver might have paid
+    const driverExpenses = fuel + toll + bata + permit;
+    
+    // Settlement = Cash Driver has (Advance + Paid) - Outgoings (Expenses + Earnings)
+    const settlement = (advance + collectedByDriver) - driverExpenses - driverPayout;
+    return Number(settlement.toFixed(2));
   });
 
   manualVehiclePercentage = computed(() => {
@@ -256,21 +263,19 @@ export class DriverDashboard implements OnInit {
   });
 
   driverSettlementAmount = computed(() => {
-    const f = this.completeFormVal();
+    this.financialUpdateTrigger(); // Re-run when this changes
+    const f = this.completeTripForm.getRawValue();
     const active = this.activeTrip();
     if (!f || !active) return 0;
 
-    // collectedByDriver is strictly what the driver collected at the end (paidAmount)
     const collectedByDriver = Number(f.paidAmount) || 0;
-
-    // Expenses: Driver pays these out of pocket or from collection
-    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + (Number(f.permitAmount) || 0) + this.totalOtherExpenses();
-
-    // Commission/Payout: Driver takes this for himself
+    const fuel = Number(f.fuelCharges) || 0;
+    const toll = Number(f.tollParking) || 0;
+    const bata = Number(f.driverBata) || 0;
+    const permit = Number(f.permitAmount) || 0;
     const driverPayout = Number(f.driverEarnings) || 0;
-
-    // Settlement: Collected Cash - Expenses Paid - Earnings Taken
-    // Result is what is handed over to Admin (or Refund if negative)
+    
+    const driverExpenses = fuel + toll + bata + permit + this.totalOtherExpenses();
     const settlement = collectedByDriver - driverExpenses - driverPayout;
 
     return Number(settlement.toFixed(2));

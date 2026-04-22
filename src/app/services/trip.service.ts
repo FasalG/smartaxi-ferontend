@@ -11,19 +11,21 @@ import { Trip } from '../models/rental.models';
 export class TripService {
     private api = inject(ApiService);
 
-    getTrips(): Observable<Trip[]> {
+    getTrips(refresh: boolean = false): Observable<Trip[]> {
         return this.api.HttpRequestHandler<Trip[]>({
             method: HttpMethod.GET,
             endpoint: Endpoints.TRIPS.BASE,
-            cacheTags: ['trips']
+            cacheTags: ['trips'],
+            invalidateTags: refresh ? ['trips'] : []
         });
     }
 
-    getDriverTrips(): Observable<Trip[]> {
+    getDriverTrips(refresh: boolean = false): Observable<Trip[]> {
         return this.api.HttpRequestHandler<Trip[]>({
             method: HttpMethod.GET,
             endpoint: Endpoints.TRIPS.DRIVER,
-            cacheTags: ['driver-trips']
+            cacheTags: ['driver-trips'],
+            invalidateTags: refresh ? ['driver-trips'] : []
         });
     }
 
