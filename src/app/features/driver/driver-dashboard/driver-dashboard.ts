@@ -182,7 +182,7 @@ export class DriverDashboard implements OnInit {
     // Settlement: Collected Cash - Expenses Paid - Earnings Taken
     // Result is what is handed over to Admin (or Refund if negative)
     const settlement = collectedByDriver - driverExpenses - driverPayout;
-    
+
     return Number(settlement.toFixed(2));
   });
 
