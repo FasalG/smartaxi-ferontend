@@ -35,7 +35,9 @@ export const routes: Routes = [
       { path: 'receivables', loadComponent: () => import('./features/admin/receivables/receivables').then(m => m.ReceivablesComponent) },
       { path: 'customers', loadComponent: () => import('./features/admin/customers/customers').then(m => m.CustomersComponent) },
       // { path: 'maintenance', loadComponent: () => import('./features/admin/maintenance/maintenance').then(m => m.MaintenanceComponent) },
-      { path: 'drivers', loadComponent: () => import('./features/admin/drivers/drivers').then(m => m.DriversComponent) }
+      { path: 'drivers', loadComponent: () => import('./features/admin/drivers/drivers').then(m => m.DriversComponent) },
+      { path: 'settlement/driver', loadComponent: () => import('./features/admin/settlement/driver-settlement/driver-settlement').then(m => m.DriverSettlementComponent) },
+      { path: 'settlement/customer', loadComponent: () => import('./features/admin/settlement/customer-settlement/customer-settlement').then(m => m.CustomerSettlementComponent) }
     ]
   },
   {

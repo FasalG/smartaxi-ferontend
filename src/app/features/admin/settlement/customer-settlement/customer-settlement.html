@@ -1,0 +1,149 @@
+<div class="settlement-container">
+    <!-- FILTERS (Hide on Print) -->
+    <div class="no-print p-4 bg-white border-bottom shadow-sm">
+        <div class="container-fluid">
+            <h4 class="fw-bold text-navy mb-4">Customer Settlement Hub</h4>
+            <form [formGroup]="filterForm" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-secondary fw-bold">Select Client/Customer</label>
+                    <select formControlName="customerId" class="form-select border-0 shadow-sm rounded-pill px-3">
+                        <option value="">All Credit Customers</option>
+                        <option *ngFor="let c of customers()" [value]="c._id">{{ c.name }} ({{ c.phone }})</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-secondary fw-bold">From Date</label>
+                    <input type="date" formControlName="startDate" class="form-control border-0 shadow-sm rounded-pill px-3">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-secondary fw-bold">To Date</label>
+                    <input type="date" formControlName="endDate" class="form-control border-0 shadow-sm rounded-pill px-3">
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button (click)="exportToExcel()" class="btn btn-navy rounded-pill px-4 flex-grow-1 btn-export">
+                        <i class="bi bi-file-earmark-excel me-2"></i> Export Excel
+                    </button>
+                    <button (click)="printReport()" class="btn btn-light rounded-pill px-4 flex-grow-1 border">
+                        <i class="bi bi-printer me-2"></i> Print Statement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- REPORT CONTENT -->
+    <div class="container-fluid p-4">
+        <div class="report-paper mx-auto">
+            <!-- SmartTaxi Header -->
+            <div class="smart-taxi-header d-flex justify-content-between align-items-<ctrl94>">
+                <div>
+                    <div class="brand-logo mb-2">Smart<span>Taxi</span></div>
+                    <div class="small text-secondary">Advanced Fleet Management</div>
+                    <div class="small fw-bold mt-4 text-navy">OUTSTANDING CREDIT STATEMENT</div>
+                </div>
+                <div class="text-end">
+                    <div class="h5 fw-bold mb-1">{{ selectedCustomerObj()?.name || 'All Clients' }}</div>
+                    <div class="small text-secondary fw-semibold">{{ selectedCustomerObj()?.phone }}</div>
+                    <div class="small text-secondary">{{ selectedCustomerObj()?.address }}</div>
+                    <div class="small text-navy mt-3">Statement Date: {{ today | date:'mediumDate' }}</div>
+                </div>
+            </div>
+
+            <!-- Summary Bar -->
+            <div class="row g-3 mb-5">
+                <div class="col-4">
+                    <div class="p-4 bg-light rounded-4 text-center">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Total Billed</div>
+                        <div class="h4 fw-bold mb-0 text-navy">₹{{ stats().billed }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-4 bg-light rounded-4 text-center">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Total Received</div>
+                        <div class="h4 fw-bold mb-0 text-success">₹{{ stats().paid }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-4 bg-warning-soft rounded-4 text-center border border-warning border-opacity-25">
+                        <div class="smaller text-warning uppercase fw-bold mb-1">Outstanding Balance</div>
+                        <div class="h4 fw-bold mb-0">₹{{ stats().balance }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger Table -->
+            <div class="table-responsive">
+                <table class="table-settlement">
+                    <thead>
+                        <tr>
+                            <th>Service Date</th>
+                            <th>Reference</th>
+                            <th>Vehicle/Details</th>
+                            <th class="text-end">Base Amount</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Outstanding</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let trip of filteredTrips()">
+                            <td>{{ trip.startTime | date:'dd MMM yyyy' }}</td>
+                            <td class="fw-bold">VOC-{{ trip._id.slice(-6).toUpperCase() }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ trip.vehicleId?.licensePlate || 'General' }}</div>
+                                <div class="smaller text-secondary">{{ trip.startLocation }} to {{ trip.endLocation || 'N/A' }}</div>
+                            </td>
+                            <td class="text-end">₹{{ trip.totalAmount }}</td>
+                            <td class="text-end text-success">₹{{ trip.paidAmount || 0 }}</td>
+                            <td class="text-end fw-bold text-danger">₹{{ trip.balanceAmount }}</td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill px-3 py-1" 
+                                    [ngClass]="trip.paymentStatus === 'paid' ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'">
+                                    {{ trip.paymentStatus?.toUpperCase() }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr *ngIf="filteredTrips().length === 0">
+                            <td colspan="7" class="text-center py-5 text-secondary">
+                                <i class="bi bi-file-earmark-text fs-1 d-block mb-3"></i>
+                                No credit transactions recorded for this period.
+                            </td>
+                        </tr>
+                        <!-- Total Row -->
+                        <tr class="row-total" *ngIf="filteredTrips().length > 0">
+                            <td colspan="5" class="text-end py-3 px-4">NET OUTSTANDING BALANCE:</td>
+                            <td class="text-end py-3 h5 mb-0 text-danger" colspan="1">
+                                ₹{{ stats().balance }}
+                            </td>
+                            <td class="bg-white"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Payment Terms -->
+            <div class="mt-5 p-3 bg-light rounded-3 smaller">
+                <div class="fw-bold mb-1 text-navy">Payment Terms & Instructions</div>
+                <ul class="mb-0 text-secondary">
+                    <li>Please clear the outstanding balance within {{ selectedCustomerObj()?.creditPeriodDays || 30 }} days of billing.</li>
+                    <li>Payments can be made via Bank Transfer or Cash to authorized personnel.</li>
+                    <li>For any discrepancies, contact accounts@smarttaxi.com</li>
+                </ul>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-5 pt-5 d-flex justify-content-between align-items-end px-4">
+                <div class="text-center" style="width: 200px;">
+                    <div class="border-top pt-2 small text-secondary">Prepared By</div>
+                </div>
+                <div class="text-center" style="width: 200px;">
+                    <div class="border-top pt-2 small text-secondary">Customer Acknowledgment</div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5 smaller text-muted pt-4 border-top">
+                SmartTaxi Management Solutions • Automated Statement • Page 1 of 1
+            </div>
+        </div>
+    </div>
+</div>

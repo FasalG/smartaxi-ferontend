@@ -153,8 +153,9 @@ export class SidebarComponent implements OnInit {
         // { route: 'admin/analytics', label: 'Analytics Engine', icon: 'Activity' },
         { route: 'admin/receivables', label: 'Receivables', icon: 'Bank' },
         { route: 'admin/customers', label: 'Customers', icon: 'Users' },
-        // { route: 'admin/maintenance', label: 'Maintenance', icon: 'Wrench' },
-        { route: 'admin/drivers', label: 'Drivers', icon: 'Users' }
+        { route: 'admin/drivers', label: 'Drivers', icon: 'Users' },
+        { route: 'admin/settlement/driver', label: 'Driver Settlement', icon: 'Bank' },
+        { route: 'admin/settlement/customer', label: 'Customer Settlement', icon: 'Receipt' }
       ];
     }
   });

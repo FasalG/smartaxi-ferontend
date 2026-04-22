@@ -1,0 +1,157 @@
+<div class="settlement-container">
+    <!-- FILTERS (Hide on Print) -->
+    <div class="no-print p-4 bg-white border-bottom shadow-sm">
+        <div class="container-fluid">
+            <h4 class="fw-bold text-navy mb-4">Driver Settlement Hub</h4>
+            <form [formGroup]="filterForm" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary fw-bold">Select Driver</label>
+                    <select formControlName="driverId" class="form-select border-0 shadow-sm rounded-pill px-3">
+                        <option value="">All Drivers</option>
+                        <option *ngFor="let d of drivers()" [value]="d._id">{{ d.name }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary fw-bold">Specific Vehicle</label>
+                    <select formControlName="vehicleId" class="form-select border-0 shadow-sm rounded-pill px-3">
+                        <option value="">All Vehicles</option>
+                        <option *ngFor="let v of vehicles()" [value]="v._id">{{ v.make }} {{ v.model }} ({{ v.licensePlate }})</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-secondary fw-bold">From Date</label>
+                    <input type="date" formControlName="startDate" class="form-control border-0 shadow-sm rounded-pill px-3">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-secondary fw-bold">To Date</label>
+                    <input type="date" formControlName="endDate" class="form-control border-0 shadow-sm rounded-pill px-3">
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button (click)="exportToExcel()" class="btn btn-navy rounded-pill px-3 flex-grow-1 btn-export">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                    </button>
+                    <button (click)="printReport()" class="btn btn-light rounded-pill px-3 flex-grow-1 border">
+                        <i class="bi bi-printer me-1"></i> Print
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- REPORT CONTENT -->
+    <div class="container-fluid p-4">
+        <div class="report-paper mx-auto" id="printableReport">
+            <!-- SmartTaxi Header -->
+            <div class="smart-taxi-header d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="brand-logo mb-2">Smart<span>Taxi</span></div>
+                    <div class="small text-secondary">Premium Transportation Solutions</div>
+                    <div class="small fw-bold mt-3 text-navy">DRIVER SETTLEMENT STATEMENT</div>
+                </div>
+                <div class="text-end">
+                    <div class="h6 fw-bold mb-1">{{ selectedDriverObj()?.name || 'All Drivers' }}</div>
+                    <div class="small text-secondary">{{ selectedDriverObj()?.email }}</div>
+                    <div class="small text-secondary mt-2">Period: {{ filterForm.value.startDate | date:'MMM d, y' }} - {{ filterForm.value.endDate | date:'MMM d, y' }}</div>
+                </div>
+            </div>
+
+            <!-- Summary Bar -->
+            <div class="row g-3 mb-4">
+                <div class="col-3">
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Total Trips</div>
+                        <div class="h5 fw-bold mb-0">{{ stats().count }}</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Cash Collected</div>
+                        <div class="h5 fw-bold mb-0">₹{{ stats().collected }}</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="smaller text-secondary uppercase fw-bold mb-1">Total Expenses</div>
+                        <div class="h5 fw-bold mb-0">₹{{ stats().expenses }}</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-3 rounded-3" [ngClass]="stats().net > 0 ? 'bg-warning-soft' : 'bg-success-soft'">
+                        <div class="smaller uppercase fw-bold mb-1">{{ stats().net > 0 ? 'Recv. From Driver' : 'Give to Driver' }}</div>
+                        <div class="h5 fw-bold mb-0">₹{{ mathAbs(stats().net) }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger Table -->
+            <div class="table-responsive">
+                <table class="table-settlement">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Voucher</th>
+                            <th>Customer & Trip</th>
+                            <th class="text-end">Total Bill</th>
+                            <th class="text-end">Collected</th>
+                            <th class="text-end">Expenses</th>
+                            <th class="text-end">Net Settle</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let trip of filteredTrips()">
+                            <td>{{ trip.startTime | date:'dd/MM/yy' }}</td>
+                            <td class="fw-bold">#{{ trip._id.slice(-6) }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ trip.customerName }}</div>
+                                <div class="smaller text-secondary">{{ trip.startLocation.slice(0,15) }}...</div>
+                            </td>
+                            <td class="text-end">₹{{ trip.totalAmount }}</td>
+                            <td class="text-end">₹{{ (trip.advanceAmount || 0) + (trip.paidAmount || 0) }}</td>
+                            <td class="text-end text-danger">₹{{ getTripExpenses(trip) }}</td>
+                            <td class="text-end fw-bold" [ngClass]="trip.driverSettlementAmount > 0 ? 'text-warning' : 'text-success'">
+                                ₹{{ mathAbs(trip.driverSettlementAmount) }}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill smaller" 
+                                    [ngClass]="trip.driverPaymentStatus === 'confirmed' ? 'bg-success' : 'bg-light text-secondary border'">
+                                    {{ trip.driverPaymentStatus || 'pending' }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr *ngIf="filteredTrips().length === 0">
+                            <td colspan="8" class="text-center py-5 text-secondary">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                No trips found for the selected criteria.
+                            </td>
+                        </tr>
+                        <!-- Final Balance Row -->
+                        <tr class="row-total" *ngIf="filteredTrips().length > 0">
+                            <td colspan="6" class="text-end py-3">FINAL SETTLEMENT BALANCE:</td>
+                            <td class="text-end py-3 h5 mb-0" [ngClass]="stats().net > 0 ? 'text-danger' : 'text-success'">
+                                ₹{{ mathAbs(stats().net) }}
+                            </td>
+                            <td class="text-center py-3">
+                                <b>{{ stats().net > 0 ? 'DUE FROM DRIVER' : 'REFUND TO DRIVER' }}</b>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer (Signatures) -->
+            <div class="mt-5 pt-5 d-flex justify-content-between align-items-end px-4">
+                <div class="text-center" style="width: 200px;">
+                    <div class="border-top pt-2 small text-secondary">Authorized Signature</div>
+                </div>
+                <div class="text-center" style="width: 200px;">
+                    <div class="border-top pt-2 small text-secondary">Driver's Signature</div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5 smaller text-muted pt-4 border-top">
+                Computer generated statement by SmartTaxi Management System. {{ today | date:'medium' }}
+            </div>
+        </div>
+    </div>
+</div>
