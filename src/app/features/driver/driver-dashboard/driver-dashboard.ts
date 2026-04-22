@@ -76,6 +76,7 @@ export class DriverDashboard implements OnInit {
 
   showStartTripForm = signal(false);
   showCompleteTripForm = signal(false);
+  showManualCompleteForm = signal(false);
   showHistory = signal(false);
   showTripDetail = signal(false);
 
@@ -99,6 +100,39 @@ export class DriverDashboard implements OnInit {
     notes: ['']
   });
 
+
+  manualCompleteForm = this.fb.group({
+    vehicleId: ['', Validators.required],
+    customerId: ['', Validators.required],
+    newCustomerName: [''],
+    newCustomerPhone: [''],
+    newCustomerEmail: [''],
+    newCustomerAddress: [''],
+    isGuest: [true],
+    
+    startLocation: ['', Validators.required],
+    startOdometer: ['', [Validators.required, Validators.min(0)]],
+    startTime: ['', Validators.required],
+    
+    endLocation: ['', Validators.required],
+    endOdometer: ['', [Validators.required, Validators.min(0)]],
+    endTime: ['', Validators.required],
+    
+    baseInvoiceAmount: [0, [Validators.required, Validators.min(0)]],
+    fuelCharges: [0, [Validators.min(0)]],
+    tollParking: [0, [Validators.min(0)]],
+    driverBata: [0, [Validators.min(0)]],
+    permitAmount: [0, [Validators.min(0)]],
+    advanceAmount: [0, [Validators.min(0)]],
+    
+    paidAmount: [0, [Validators.required, Validators.min(0)]],
+    totalAmount: [0, [Validators.required, Validators.min(0)]],
+    driverEarnings: [0, [Validators.min(0)]],
+    
+    tripType: ['Cash', Validators.required],
+    paymentStatus: ['pending', Validators.required],
+    notes: ['']
+  });
 
   completeTripForm = this.fb.group({
     endLocation: ['', Validators.required],
@@ -140,6 +174,11 @@ export class DriverDashboard implements OnInit {
   // Manual trigger for financial signal since forms are patched with {emitEvent: false}
   private financialUpdateTrigger = signal(0);
 
+  manualCompleteFormVal = computed(() => {
+    this.financialUpdateTrigger(); // Dependency
+    return this.manualCompleteForm.getRawValue();
+  });
+
   completeFormVal = computed(() => {
     this.financialUpdateTrigger(); // Dependency
     return this.completeTripForm.getRawValue();
@@ -163,6 +202,56 @@ export class DriverDashboard implements OnInit {
 
   totalOtherExpenses = computed(() => {
     return 0;
+  });
+
+  manualTotalKm = computed(() => {
+    const f = this.manualCompleteFormVal();
+    if (!f) return 0;
+    const start = Number(f.startOdometer) || 0;
+    const end = Number(f.endOdometer) || 0;
+    const km = end - start;
+    return km > 0 ? km : 0;
+  });
+
+  manualBalanceAmount = computed(() => {
+    const f = this.manualCompleteFormVal();
+    if (!f) return 0;
+    const total = Number(f.totalAmount) || 0;
+    const received = Number(f.paidAmount) || 0; // Advance is hardcoded 0 for manual
+    return Math.max(0, total - received);
+  });
+
+  manualDriverSettlementAmount = computed(() => {
+    const f = this.manualCompleteFormVal();
+    if (!f) return 0;
+    const collectedByDriver = Number(f.paidAmount) || 0;
+    const advance = 0; // Hardcoded 0 for manual trip
+    const driverExpenses = (Number(f.fuelCharges) || 0) + (Number(f.tollParking) || 0) + (Number(f.driverBata) || 0) + (Number(f.permitAmount) || 0);
+    const driverPayout = Number(f.driverEarnings) || 0;
+    
+    // Settlement = (Cash Driver has: Advance + Paid) - Expenses - Earnings
+    const settlement = (advance + collectedByDriver) - driverExpenses - driverPayout;
+    return Number(settlement.toFixed(2));
+  });
+  
+  manualOutgoings = computed(() => {
+    const f = this.manualCompleteFormVal();
+    if (!f) return 0;
+    const fuel = Number(f.fuelCharges) || 0;
+    const toll = Number(f.tollParking) || 0;
+    const bata = Number(f.driverBata) || 0;
+    const permit = Number(f.permitAmount) || 0;
+    const earnings = Number(f.driverEarnings) || 0;
+    return Number((fuel + toll + bata + permit + earnings).toFixed(2));
+  });
+
+  manualVehiclePercentage = computed(() => {
+    const vehId = this.manualCompleteForm.get('vehicleId')?.value;
+    if (vehId) {
+      const vehicle = this.vehicles().find(v => v._id === vehId);
+      return vehicle?.driverPaymentPercentage ?? 20;
+    }
+    return 20;
   });
 
   driverSettlementAmount = computed(() => {
@@ -212,6 +301,58 @@ export class DriverDashboard implements OnInit {
     this.completeTripForm.valueChanges.subscribe(() => {
       this.recalculateFinancials();
     });
+
+    this.manualCompleteForm.valueChanges.subscribe(() => {
+      this.recalculateManualFinancials();
+    });
+
+    // When customer changes in manual form, check credit eligibility
+    this.manualCompleteForm.get('customerId')?.valueChanges.subscribe(val => {
+      if (val && val !== 'new') {
+        const cust = this.customers().find(c => c._id === val);
+        if (cust) {
+          this.manualCompleteForm.patchValue({ isGuest: !cust.isEligibleForCredit }, { emitEvent: false });
+          this.recalculateManualFinancials();
+        }
+      }
+    });
+  }
+
+  recalculateManualFinancials() {
+    const f = this.manualCompleteForm.getRawValue();
+    const base = Number(f.baseInvoiceAmount) || 0;
+    const toll = Number(f.tollParking) || 0;
+    const bata = Number(f.driverBata) || 0;
+    const permit = Number(f.permitAmount) || 0;
+    const advance = 0; // Hardcoded 0 for manual recordings
+
+    const total = base + toll + bata + permit;
+    const percentage = this.manualVehiclePercentage() / 100;
+    const earnings = Number((base * percentage).toFixed(2));
+
+    const isNew = f.customerId === 'new';
+    const cust = isNew ? null : this.customers().find(c => c._id === f.customerId);
+    const isEligible = isNew ? !f.isGuest : (cust?.isEligibleForCredit || false);
+
+    let paidAmount = Number(f.paidAmount);
+    if (!isEligible) {
+      paidAmount = Math.max(0, total - advance);
+    }
+
+    const balance = Math.max(0, total - (advance + paidAmount));
+    const tripType = (balance > 0 && isEligible) ? 'Credit' : 'Cash';
+    const paymentStatus = balance === 0 ? 'paid' : 'pending';
+
+    this.manualCompleteForm.patchValue({
+      totalAmount: total,
+      driverEarnings: earnings,
+      paidAmount: paidAmount,
+      advanceAmount: 0,
+      tripType: tripType,
+      paymentStatus: paymentStatus as any
+    }, { emitEvent: false });
+
+    this.financialUpdateTrigger.update(n => n + 1);
   }
 
   recalculateFinancials() {
@@ -308,7 +449,22 @@ export class DriverDashboard implements OnInit {
       return;
     }
     this.startTripForm.patchValue({ vehicleId: this.selectedVehicleId() });
+    this.showManualCompleteForm.set(false);
     this.showStartTripForm.set(true);
+  }
+
+  async showManualComplete() {
+    if (!this.selectedVehicleId()) {
+      this.confirmDialog.title = 'Vehicle Selection';
+      this.confirmDialog.message = 'Please select a vehicle from the fleet to record a manual trip.';
+      this.confirmDialog.confirmText = 'OK';
+      this.confirmDialog.type = 'info';
+      await this.confirmDialog.open();
+      return;
+    }
+    this.manualCompleteForm.patchValue({ vehicleId: this.selectedVehicleId() });
+    this.showStartTripForm.set(false);
+    this.showManualCompleteForm.set(true);
   }
 
   onStartTrip() {
@@ -361,6 +517,90 @@ export class DriverDashboard implements OnInit {
     } else {
       const selectedCust = this.customers().find(c => c._id === formVal.customerId);
       processTrip(formVal.customerId as string, selectedCust?.name || 'Unknown');
+    }
+  }
+
+  onManualCompleteTrip() {
+    if (this.manualCompleteForm.invalid) return;
+
+    this.loading.set(true);
+    const formVal = this.manualCompleteForm.value;
+
+    const processManualTrip = (customerId: string, customerName: string) => {
+      const start = new Date(formVal.startTime as string);
+      const end = new Date(formVal.endTime as string);
+      const hours = Math.ceil(Math.abs(end.getTime() - start.getTime()) / 36e5);
+      const days = Math.ceil(hours / 24);
+
+      const fVal = this.manualCompleteForm.getRawValue();
+
+      const data: Partial<Trip> = {
+        vehicleId: formVal.vehicleId as string,
+        customerId: customerId,
+        customerName: customerName,
+        startLocation: formVal.startLocation as string,
+        startOdometer: Number(formVal.startOdometer),
+        startTime: new Date(formVal.startTime as string).toISOString(),
+        
+        endLocation: formVal.endLocation as string,
+        endOdometer: Number(formVal.endOdometer),
+        endTime: new Date(formVal.endTime as string).toISOString(),
+        
+        status: 'completed' as const,
+        driverId: this.currentUser()?._id,
+
+        fuelCharges: Number(fVal.fuelCharges),
+        tollParking: Number(fVal.tollParking),
+        driverBata: Number(fVal.driverBata),
+        advanceAmount: Number(fVal.advanceAmount),
+        paidAmount: Number(fVal.paidAmount),
+        baseInvoiceAmount: Number(fVal.baseInvoiceAmount),
+        permitAmount: Number(fVal.permitAmount),
+        totalAmount: Number(fVal.totalAmount),
+        driverEarnings: Number(fVal.driverEarnings),
+        
+        balanceAmount: this.manualBalanceAmount(),
+        driverSettlementAmount: this.manualDriverSettlementAmount(),
+        tripType: fVal.tripType as any,
+        paymentStatus: fVal.paymentStatus as any,
+        totalKm: this.manualTotalKm(),
+        totalHours: hours,
+        totalDays: days,
+        driverPaymentStatus: 'pending',
+        notes: fVal.notes || ''
+      };
+
+      this.tripService.createTrip(data).subscribe({
+        next: () => {
+          this.showManualCompleteForm.set(false);
+          this.loading.set(false);
+          this.manualCompleteForm.reset({ vehicleId: this.selectedVehicleId(), isGuest: true });
+          this.loadInitialData();
+        },
+        error: () => this.loading.set(false)
+      });
+    };
+
+    if (formVal.customerId === 'new') {
+      const newCustomer = {
+        name: formVal.newCustomerName as string,
+        phone: formVal.newCustomerPhone as string,
+        email: formVal.newCustomerEmail as string,
+        address: formVal.newCustomerAddress as string,
+        isGuest: formVal.isGuest,
+        isEligibleForCredit: !formVal.isGuest
+      };
+
+      this.customerService.add(newCustomer as any).subscribe({
+        next: (res) => {
+          processManualTrip(res._id as string, res.name);
+          this.customerService.getAll().subscribe(c => this.customers.set(c));
+        },
+        error: () => this.loading.set(false)
+      });
+    } else {
+      const selectedCust = this.customers().find(c => c._id === formVal.customerId);
+      processManualTrip(formVal.customerId as string, selectedCust?.name || 'Unknown');
     }
   }
 

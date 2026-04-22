@@ -12,6 +12,21 @@
         background-color: var(--navy);
     }
 
+    .bg-success-soft {
+        background-color: #f0fdf4 !important;
+        color: #166534 !important;
+    }
+
+    .bg-warning-soft {
+        background-color: #fffbeb !important;
+        color: #92400e !important;
+    }
+
+    .bg-light-info {
+        background-color: #f0f9ff !important;
+        border: 2px solid #e0f2fe !important;
+    }
+
     .welcome-card {
         background: white;
         border-radius: 24px;
