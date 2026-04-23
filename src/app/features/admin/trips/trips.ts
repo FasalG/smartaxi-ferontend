@@ -81,8 +81,8 @@ export class TripsComponent {
         startTime: ['', Validators.required],
         endTime: [''],
         status: ['in-progress', Validators.required],
-        paymentStatus: ['pending']
-
+        paymentStatus: ['pending'],
+        tripType: ['Cash', Validators.required]
     });
 
     constructor() {
@@ -224,6 +224,7 @@ export class TripsComponent {
             const now = new Date();
             this.tripForm.reset({
                 status: 'in-progress',
+                tripType: 'Cash',
                 totalAmount: 0,
                 startTime: this.formatDateForInput(now)
             });
@@ -275,6 +276,7 @@ export class TripsComponent {
 
             endTime: this.formatDateForInput(trip.endTime),
             status: trip.status,
+            tripType: trip.tripType || 'Cash',
             paymentStatus: trip.paymentStatus
         });
     }

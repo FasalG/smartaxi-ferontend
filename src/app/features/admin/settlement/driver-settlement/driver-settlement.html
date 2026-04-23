@@ -28,10 +28,10 @@
                 </div>
                 <div class="col-12 col-xl-4 align-self-end">
                     <div class="d-flex gap-2">
-                        <button (click)="refreshData()" [disabled]="loading()" class="btn btn-primary rounded-pill px-4 flex-grow-1 shadow-sm">
+                        <!-- <button (click)="refreshData()" [disabled]="loading()" class="btn btn-primary rounded-pill px-4 flex-grow-1 shadow-sm">
                             <i class="bi" [ngClass]="loading() ? 'bi-arrow-repeat spin' : 'bi-download'"></i> 
                             {{ loading() ? 'Loading' : 'Fetch Records' }}
-                        </button>
+                        </button> -->
                         <div class="d-flex gap-2">
                             <button (click)="exportToExcel()" class="btn btn-outline-success rounded-pill px-3 border shadow-sm" title="Export Excel">
                                 <i class="bi bi-file-earmark-excel"></i>

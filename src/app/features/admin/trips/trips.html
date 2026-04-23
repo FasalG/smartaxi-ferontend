@@ -100,6 +100,10 @@
                                         [ngClass]="{'bg-primary': trip.status === 'in-progress', 'bg-success': trip.status === 'completed', 'bg-danger': trip.status === 'cancelled'}">
                                         {{ trip.status }}
                                     </span>
+                                    <span class="badge ms-1" 
+                                        [ngClass]="trip.tripType === 'Credit' ? 'bg-warning-soft text-warning border border-warning' : 'bg-info-soft text-info border border-info'">
+                                        {{ trip.tripType || 'Cash' }}
+                                    </span>
                                 </td>
                                 <td class="fw-bold text-success">{{ trip.totalAmount | currency:'INR':'symbol' }}</td>
                                 <td class="text-end px-4">
@@ -275,6 +279,13 @@
                         <select class="form-select" formControlName="paymentStatus">
                             <option value="pending">Pending</option>
                             <option value="paid">Paid</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-secondary">Trip Type</label>
+                        <select class="form-select" formControlName="tripType">
+                            <option value="Cash">Cash Trip</option>
+                            <option value="Credit">Credit Trip</option>
                         </select>
                     </div>
                 </div>

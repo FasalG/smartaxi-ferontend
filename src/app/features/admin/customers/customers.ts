@@ -31,7 +31,7 @@ export class CustomersComponent implements OnInit {
 
     filteredCustomers = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
-        const all = this.customers().filter(c => !c.isGuest);
+        const all = this.customers();
         if (!query) return all;
         return all.filter(c =>
             c.name?.toLowerCase().includes(query) ||
@@ -57,7 +57,8 @@ export class CustomersComponent implements OnInit {
         email: [''],
         address: [''],
         isEligibleForCredit: [false],
-        creditPeriodDays: [{ value: 0, disabled: true }, Validators.min(0)]
+        creditPeriodDays: [{ value: 0, disabled: true }, Validators.min(0)],
+        isGuest: [false]
     });
 
     ngOnInit() {
@@ -142,7 +143,8 @@ export class CustomersComponent implements OnInit {
             email: customer.email || '',
             address: customer.address || '',
             isEligibleForCredit: customer.isEligibleForCredit || false,
-            creditPeriodDays: customer.creditPeriodDays || 0
+            creditPeriodDays: customer.creditPeriodDays || 0,
+            isGuest: customer.isGuest || false
         });
         this.showForm.set(true);
     }
