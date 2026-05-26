@@ -15,9 +15,14 @@
                             (click)="setTab('handovers')">
                         Driver Handovers
                     </button>
+                    <button class="btn btn-sm rounded-pill px-4" 
+                            [ngClass]="activeTab() === 'expenses' ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="setTab('expenses')">
+                        Driver Expenses
+                    </button>
                 </div>
             </div>
-            <form *ngIf="activeTab() === 'ledger'" [formGroup]="filterForm" class="row g-3 align-items-end">
+            <form *ngIf="activeTab() === 'ledger' || activeTab() === 'expenses'" [formGroup]="filterForm" class="row g-3 align-items-end">
                 <div class="col-sm-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">Select Driver</label>
                     <select formControlName="driverId" class="form-select border-0 shadow-sm rounded-pill px-3">
@@ -452,6 +457,120 @@
 
                 <div class="modal-footer border-0 p-3">
                     <button type="button" class="btn btn-navy rounded-pill px-4 w-100" (click)="closeVerifyModal()">Close Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPENSES TAB CONTENT (Driver Expenses List) -->
+    <div *ngIf="activeTab() === 'expenses'" class="container-fluid p-4">
+        <div *ngIf="expenseLoading()" class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading expenses...</span>
+            </div>
+        </div>
+
+        <div *ngIf="!expenseLoading()" class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-navy">Driver Logged Expenses</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Voucher ID</th>
+                                <th>Driver</th>
+                                <th>Vehicle</th>
+                                <th>Expense Type</th>
+                                <th>Remarks / Notes</th>
+                                <th class="text-center">Receipt</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of filteredExpenses()">
+                                <td class="text-secondary font-monospace">{{ item.date | date:'dd/MM/yyyy' }}</td>
+                                <td class="fw-bold text-navy font-monospace">{{ item.expenseNumber || item.expense_number || 'N/A' }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ item.driverId?.name || 'Unknown Driver' }}</div>
+                                    <div class="smaller text-secondary">{{ item.driverId?.email }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">{{ item.vehicleId?.licensePlate || 'N/A' }}</div>
+                                    <div class="smaller text-secondary">{{ item.vehicleId?.make }} {{ item.vehicleId?.model }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-soft text-secondary text-uppercase small px-2 py-1">
+                                        {{ item.expenseType }}
+                                    </span>
+                                </td>
+                                <td class="text-secondary" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ item.remarks || '-' }}
+                                </td>
+                                <td class="text-center">
+                                    <button *ngIf="item.imageUrl" (click)="openExpenseImage(item.imageUrl)" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0 smaller">
+                                        <i class="bi bi-image"></i> View
+                                    </button>
+                                    <span *ngIf="!item.imageUrl" class="text-muted small">No file</span>
+                                </td>
+                                <td class="text-end fw-bold text-navy">₹{{ item.amount | number:'1.2-2' }}</td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill px-3 py-1 font-monospace"
+                                          [ngClass]="{
+                                            'bg-success-soft text-success border border-success': item.status === 'approved',
+                                            'bg-warning-soft text-warning border border-warning': item.status === 'pending',
+                                            'bg-danger-soft text-danger border border-danger': item.status === 'rejected'
+                                          }">
+                                        {{ item.status | uppercase }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-inline-flex justify-content-center gap-2" *ngIf="item.status === 'pending'">
+                                        <button (click)="updateExpenseStatus(item._id, 'approved')" class="btn btn-sm btn-success rounded-circle" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 0.75rem;" title="Approve">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button (click)="updateExpenseStatus(item._id, 'rejected')" class="btn btn-sm btn-danger rounded-circle" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 0.75rem;" title="Reject">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                    <span *ngIf="item.status !== 'pending'" class="text-muted smaller font-monospace">-</span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="filteredExpenses().length === 0">
+                                <td colspan="10" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-receipt fs-2 d-block mb-2"></i>
+                                    No expense records found matching the active filters.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPENSE ATTACHMENT MODAL PREVIEW -->
+    <div *ngIf="selectedExpenseImage()" class="modal fade show d-block no-print" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-navy text-white py-3">
+                    <h5 class="modal-title fw-bold">Expense Receipt Preview</h5>
+                    <button type="button" class="btn-close btn-close-white" (click)="closeExpenseImage()"></button>
+                </div>
+                <div class="modal-body text-center p-4 bg-light">
+                    <a [href]="selectedExpenseImage()" target="_blank" class="d-inline-block border rounded-3 p-1 bg-white shadow-sm">
+                        <img [src]="selectedExpenseImage()" class="img-fluid rounded-2" style="max-height: 480px; object-fit: contain;">
+                    </a>
+                    <div class="mt-3 smaller text-secondary">
+                        <i class="bi bi-info-circle me-1"></i> Click the image to view or download it full size.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-navy rounded-pill px-4 w-100" (click)="closeExpenseImage()">Close Preview</button>
                 </div>
             </div>
         </div>

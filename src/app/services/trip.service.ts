@@ -14,18 +14,14 @@ export class TripService {
     getTrips(refresh: boolean = false): Observable<Trip[]> {
         return this.api.HttpRequestHandler<Trip[]>({
             method: HttpMethod.GET,
-            endpoint: Endpoints.TRIPS.BASE,
-            cacheTags: ['trips'],
-            invalidateTags: refresh ? ['trips'] : []
+            endpoint: Endpoints.TRIPS.BASE
         });
     }
 
     getDriverTrips(refresh: boolean = false): Observable<Trip[]> {
         return this.api.HttpRequestHandler<Trip[]>({
             method: HttpMethod.GET,
-            endpoint: Endpoints.TRIPS.DRIVER,
-            cacheTags: ['driver-trips'],
-            invalidateTags: refresh ? ['driver-trips'] : []
+            endpoint: Endpoints.TRIPS.DRIVER
         });
     }
 

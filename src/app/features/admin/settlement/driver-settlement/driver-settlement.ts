@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SettlementService } from '../../../../services/settlement.service';
+import { ExpenseService } from '../../../../services/expense.service';
 
 @Component({
   selector: 'app-driver-settlement',
@@ -23,22 +24,71 @@ export class DriverSettlementComponent implements OnInit {
   private authService = inject(AuthService);
   private vehicleService = inject(VehicleService);
   private settlementService = inject(SettlementService);
+  private expenseService = inject(ExpenseService);
   private fb = inject(FormBuilder);
-
-  activeTab = signal<'ledger' | 'handovers'>('ledger');
+ 
+  activeTab = signal<'ledger' | 'handovers' | 'expenses'>('ledger');
   handovers = signal<any[]>([]);
   settlementLoading = signal(false);
+  
+  // Expense tab state
+  allExpenses = signal<any[]>([]);
+  expenseLoading = signal(false);
+  selectedExpenseImage = signal<string | null>(null);
   
   // Verify modal state
   selectedHandoverForVerify = signal<any | null>(null);
   adminNotes = signal('');
   processingHandover = signal(false);
-
-  setTab(tab: 'ledger' | 'handovers') {
+ 
+  setTab(tab: 'ledger' | 'handovers' | 'expenses') {
     this.activeTab.set(tab);
     if (tab === 'handovers') {
       this.loadHandovers();
+    } else if (tab === 'expenses') {
+      this.loadExpenses();
     }
+  }
+
+  loadExpenses() {
+    this.expenseLoading.set(true);
+    this.expenseService.getAll().subscribe({
+      next: (res: any) => {
+        const data = res && res.success ? res.data : (Array.isArray(res) ? res : []);
+        this.allExpenses.set(data);
+        this.expenseLoading.set(false);
+      },
+      error: (err: any) => {
+        console.error('Error loading expenses:', err);
+        this.expenseLoading.set(false);
+      }
+    });
+  }
+
+  openExpenseImage(url: string) {
+    this.selectedExpenseImage.set(url);
+  }
+
+  closeExpenseImage() {
+    this.selectedExpenseImage.set(null);
+  }
+
+  updateExpenseStatus(id: string, status: 'approved' | 'rejected') {
+    const actionText = status === 'approved' ? 'approve' : 'reject';
+    if (!confirm(`Are you sure you want to ${actionText} this expense?`)) return;
+    
+    this.expenseLoading.set(true);
+    this.expenseService.updateStatus(id, status).subscribe({
+      next: () => {
+        alert(`Expense status updated to ${status} successfully!`);
+        this.loadExpenses();
+      },
+      error: (err: any) => {
+        console.error('Error updating expense status:', err);
+        alert(err.message || 'Error updating expense status');
+        this.expenseLoading.set(false);
+      }
+    });
   }
 
   loadHandovers() {
@@ -141,6 +191,22 @@ export class DriverSettlementComponent implements OnInit {
         (typeof trip.vehicleId === 'object' ? trip.vehicleId._id === filters.vehicleId : trip.vehicleId === filters.vehicleId);
       const matchDate = tripDate >= (filters.startDate || '') && tripDate <= (filters.endDate || '');
       return matchDriver && matchVehicle && matchDate && trip.status === 'completed';
+    });
+  });
+
+  filteredExpenses = computed(() => {
+    const filters = this.formValues();
+    const expenses = this.allExpenses();
+    if (!filters) return expenses;
+
+    return expenses.filter((exp: any) => {
+      const expDate = new Date(exp.date).toISOString().split('T')[0];
+      const matchDriver = !filters.driverId || 
+        (typeof exp.driverId === 'object' ? exp.driverId?._id === filters.driverId : exp.driverId === filters.driverId);
+      const matchVehicle = !filters.vehicleId || 
+        (typeof exp.vehicleId === 'object' ? exp.vehicleId?._id === filters.vehicleId : exp.vehicleId === filters.vehicleId);
+      const matchDate = expDate >= (filters.startDate || '') && expDate <= (filters.endDate || '');
+      return matchDriver && matchVehicle && matchDate;
     });
   });
 

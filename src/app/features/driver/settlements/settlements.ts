@@ -2,6 +2,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SettlementService } from '../../../services/settlement.service';
+import { ExpenseService } from '../../../services/expense.service';
 import { Trip, DriverSettlement } from '../../../models/rental.models';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -27,6 +28,7 @@ import { MatDividerModule } from '@angular/material/divider';
 export class DriverSettlementsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private settlementService = inject(SettlementService);
+  private expenseService = inject(ExpenseService);
   protected readonly Math = Math;
 
   asTrip(tripId: string | Trip | undefined): Trip {
@@ -35,6 +37,7 @@ export class DriverSettlementsComponent implements OnInit {
 
   handoverForm!: FormGroup;
   pendingTrips = signal<Trip[]>([]);
+  driverExpenses = signal<any[]>([]);
   settlementHistory = signal<DriverSettlement[]>([]);
   
   loading = signal(false);
@@ -51,9 +54,10 @@ export class DriverSettlementsComponent implements OnInit {
   // Detailed view of history item
   expandedSettlementId = signal<string | null>(null);
 
-  // Overview stats based on pending trips
+  // Overview stats based on pending trips and standalone driver expenses
   stats = computed(() => {
     const trips = this.pendingTrips();
+    const standaloneExpenses = this.driverExpenses();
     let totalCashCollected = 0;
     let totalExpenses = 0;
     let totalEarnings = 0;
@@ -68,6 +72,13 @@ export class DriverSettlementsComponent implements OnInit {
       
       // Driver earnings
       totalEarnings += t.driverEarnings || 0;
+    });
+
+    // Add standalone driver expenses (that are not rejected by admin)
+    standaloneExpenses.forEach(exp => {
+      if (exp.status !== 'rejected') {
+        totalExpenses += exp.amount || 0;
+      }
     });
 
     // Net balance driver owes admin = Cash collected - expenses - earnings
@@ -136,6 +147,16 @@ export class DriverSettlementsComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading settlements history:', err);
+      }
+    });
+
+    // Load driver standalone expenses
+    this.expenseService.getAll().subscribe({
+      next: (expenses: any[]) => {
+        this.driverExpenses.set(expenses || []);
+      },
+      error: (err: any) => {
+        console.error('Error loading driver expenses:', err);
       }
     });
   }

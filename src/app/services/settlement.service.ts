@@ -14,16 +14,14 @@ export class SettlementService {
     getPendingTrips(): Observable<Trip[]> {
         return this.api.HttpRequestHandler<Trip[]>({
             method: HttpMethod.GET,
-            endpoint: Endpoints.SETTLEMENTS.PENDING_TRIPS,
-            cacheTags: ['pending-settlements']
+            endpoint: Endpoints.SETTLEMENTS.PENDING_TRIPS
         });
     }
 
     getDriverSettlements(): Observable<DriverSettlement[]> {
         return this.api.HttpRequestHandler<DriverSettlement[]>({
             method: HttpMethod.GET,
-            endpoint: Endpoints.SETTLEMENTS.BASE,
-            cacheTags: ['driver-settlements']
+            endpoint: Endpoints.SETTLEMENTS.BASE
         });
     }
 
@@ -39,8 +37,7 @@ export class SettlementService {
     getAdminSettlements(): Observable<DriverSettlement[]> {
         return this.api.HttpRequestHandler<DriverSettlement[]>({
             method: HttpMethod.GET,
-            endpoint: Endpoints.SETTLEMENTS.ADMIN,
-            cacheTags: ['admin-settlements']
+            endpoint: Endpoints.SETTLEMENTS.ADMIN
         });
     }
 

@@ -15,8 +15,7 @@ export class ExpenseService {
     getAll(): Observable<Expense[]> {
         return this.api.HttpRequestHandler<Expense[]>({
             method: HttpMethod.GET,
-            endpoint: Endpoints.EXPENSES.BASE,
-            cacheTags: [this.cacheTag]
+            endpoint: Endpoints.EXPENSES.BASE
         });
     }
 
@@ -42,6 +41,15 @@ export class ExpenseService {
             method: HttpMethod.PUT,
             endpoint: `${Endpoints.EXPENSES.BASE}/${id}`,
             body: item,
+            invalidateTags: [this.cacheTag]
+        });
+    }
+
+    updateStatus(id: string, status: 'approved' | 'rejected'): Observable<any> {
+        return this.api.HttpRequestHandler<any>({
+            method: HttpMethod.PUT,
+            endpoint: `${Endpoints.EXPENSES.BASE}/${id}`,
+            body: { status },
             invalidateTags: [this.cacheTag]
         });
     }
