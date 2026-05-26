@@ -54,6 +54,28 @@ export class ExpenseService {
         });
     }
 
+    getExpenseTypes(): Observable<string[]> {
+        return this.api.HttpRequestHandler<string[]>({
+            method: HttpMethod.GET,
+            endpoint: `${Endpoints.EXPENSES.BASE}/types`
+        });
+    }
+
+    addExpenseType(type: string): Observable<string[]> {
+        return this.api.HttpRequestHandler<string[]>({
+            method: HttpMethod.POST,
+            endpoint: `${Endpoints.EXPENSES.BASE}/types`,
+            body: { type }
+        });
+    }
+
+    deleteExpenseType(type: string): Observable<string[]> {
+        return this.api.HttpRequestHandler<string[]>({
+            method: HttpMethod.DELETE,
+            endpoint: `${Endpoints.EXPENSES.BASE}/types/${type}`
+        });
+    }
+
     generateCode(prefix: string): string {
         return `${prefix}${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
     }

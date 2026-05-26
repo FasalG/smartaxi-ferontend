@@ -1,0 +1,86 @@
+<div class="container-fluid py-4 admin-expense-types animate-fade-in">
+    <!-- Header -->
+    <div class="row align-items-center mb-4">
+        <div class="col">
+            <h1 class="h3 fw-bold text-navy mb-1">Expense Categories</h1>
+            <p class="text-secondary smaller uppercase tracking-widest fw-bold mb-0">System Configurations</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Configure Panel (Left) -->
+        <div class="col-xl-5 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <h5 class="fw-bold text-navy mb-3">Add Custom Category</h5>
+                
+                <form [formGroup]="typeForm" (ngSubmit)="onAdd()">
+                    <div class="d-flex gap-2 align-items-start mb-4">
+                        <div class="flex-grow-1">
+                            <input type="text" formControlName="newType" class="form-control-premium" 
+                                   placeholder="e.g. Fuel, Toll, Toll Charge, Food...">
+                            <div *ngIf="typeForm.get('newType')?.touched && typeForm.get('newType')?.invalid" class="text-danger smaller mt-1">
+                                Category name must be between 2 and 30 characters.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-navy rounded-3 px-4 py-2.5 fw-bold d-flex align-items-center gap-2" [disabled]="isAdding()">
+                            <svg *ngIf="isAdding()" class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" width="16" height="16">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Add
+                        </button>
+                    </div>
+                </form>
+
+                <h6 class="fw-bold text-navy mb-3 d-flex align-items-center gap-2">
+                    Active Categories List
+                    <span class="badge bg-light text-navy border rounded-pill px-2.5 py-1">{{ expenseTypes().length }}</span>
+                </h6>
+
+                <div class="list-group-premium rounded-3">
+                    <div *ngFor="let type of expenseTypes()" class="list-item d-flex justify-content-between align-items-center px-3 py-2.5 border-bottom">
+                        <span class="fw-semibold text-navy">{{ type }}</span>
+                        <button type="button" class="btn btn-link btn-sm text-danger p-0 border-0" (click)="onDelete(type)" title="Delete category">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div *ngIf="expenseTypes().length === 0" class="text-center py-4 text-secondary smaller">
+                        No active categories. Defaults will apply to the driver dropdown.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel (Right) -->
+        <div class="col-xl-7 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+                <h5 class="fw-bold text-navy mb-1">Driver Dropdown Preview</h5>
+                <p class="smaller text-secondary mb-4">Live demonstration of options available to drivers under your account</p>
+
+                <div class="bg-light p-4 rounded-4 border mb-4">
+                    <label class="form-label-premium">Expense Type (Driver View)</label>
+                    <mat-form-field appearance="outline" class="w-100 no-subscript-container custom-mat-select bg-white">
+                        <mat-select placeholder="Select Type..." [disabled]="true">
+                            <mat-option *ngFor="let t of expenseTypes()" [value]="t">{{ t }}</mat-option>
+                            <mat-option value="Other">Other</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <p class="smaller text-secondary mt-3 mb-0">
+                        <span class="fw-bold text-navy">Note:</span> Drivers will select from your customized active categories above. The <strong>"Other"</strong> category is automatically appended at the bottom, allowing drivers to submit any custom operational expenses and specify details in the Remarks.
+                    </p>
+                </div>
+
+                <div class="p-3 border rounded-4 bg-light bg-opacity-50">
+                    <h6 class="fw-bold text-navy smaller uppercase mb-2">Category Guidelines</h6>
+                    <ul class="smaller text-secondary mb-0 ps-3">
+                        <li class="mb-1">Keep names short, descriptive, and clean (e.g. <em>"Fuel"</em> or <em>"Cleaning"</em>).</li>
+                        <li class="mb-1">Modifying categories will instantly update options for all active drivers in real-time.</li>
+                        <li>Deleting a category will not alter past logged driver expenses that used it.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TripService } from '../../../services/trip.service';
 import { AuthService } from '../../../services/auth.service';
 import { Trip } from '../../../models/rental.models';
@@ -17,6 +17,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 export class TripHistoryComponent implements OnInit {
   private tripService = inject(TripService);
   private authService = inject(AuthService);
+  private fb = inject(FormBuilder);
 
   @ViewChild('confirmDialog') confirmDialog!: ConfirmDialogComponent;
 
@@ -26,6 +27,8 @@ export class TripHistoryComponent implements OnInit {
   loading = signal(false);
   showHistory = signal(true);
   showTripDetail = signal(false);
+  isEditing = signal(false);
+  tripForm!: FormGroup;
 
   // Advanced Settlement State
   showAdjustmentUI = signal(false);
@@ -230,9 +233,126 @@ export class TripHistoryComponent implements OnInit {
     return Math.abs(n || 0);
   }
 
+  initForm() {
+    this.tripForm = this.fb.group({
+      startLocation: ['', Validators.required],
+      endLocation: [''],
+      startOdometer: [0, [Validators.required, Validators.min(0)]],
+      endOdometer: [0, [Validators.required, Validators.min(0)]],
+      startTime: ['', Validators.required],
+      endTime: [''],
+      baseInvoiceAmount: [0, [Validators.required, Validators.min(0)]],
+      fuelCharges: [0, [Validators.required, Validators.min(0)]],
+      tollParking: [0, [Validators.required, Validators.min(0)]],
+      driverBata: [0, [Validators.required, Validators.min(0)]],
+      permitAmount: [0, [Validators.required, Validators.min(0)]],
+      advanceAmount: [0, [Validators.required, Validators.min(0)]],
+      driverAdvanceAmount: [0, [Validators.required, Validators.min(0)]],
+      paidAmount: [0, [Validators.required, Validators.min(0)]],
+      notes: ['']
+    });
+  }
+
+  startEditing() {
+    const trip = this.selectedTrip();
+    if (!trip) return;
+    
+    if (!this.tripForm) {
+      this.initForm();
+    }
+
+    const formattedStart = trip.startTime ? new Date(trip.startTime).toISOString().slice(0, 16) : '';
+    const formattedEnd = trip.endTime ? new Date(trip.endTime).toISOString().slice(0, 16) : '';
+
+    this.tripForm.patchValue({
+      startLocation: trip.startLocation,
+      endLocation: trip.endLocation || '',
+      startOdometer: trip.startOdometer,
+      endOdometer: trip.endOdometer || 0,
+      startTime: formattedStart,
+      endTime: formattedEnd,
+      baseInvoiceAmount: trip.baseInvoiceAmount || 0,
+      fuelCharges: trip.fuelCharges || 0,
+      tollParking: trip.tollParking || 0,
+      driverBata: trip.driverBata || 0,
+      permitAmount: trip.permitAmount || 0,
+      advanceAmount: trip.advanceAmount || 0,
+      driverAdvanceAmount: trip.driverAdvanceAmount || 0,
+      paidAmount: trip.paidAmount || 0,
+      notes: trip.notes || ''
+    });
+
+    this.isEditing.set(true);
+  }
+
+  saveTripChanges() {
+    if (this.tripForm.invalid) {
+      this.tripForm.markAllAsTouched();
+      return;
+    }
+
+    const trip = this.selectedTrip();
+    if (!trip || !trip._id) return;
+
+    this.loading.set(true);
+    const formVal = this.tripForm.value;
+
+    const start = new Date(formVal.startTime);
+    const end = formVal.endTime ? new Date(formVal.endTime) : null;
+    let hours = 0;
+    let days = 0;
+    if (end) {
+      hours = Math.ceil(Math.abs(end.getTime() - start.getTime()) / 36e5);
+      days = Math.ceil(hours / 24);
+    }
+    const totalKm = (formVal.endOdometer && formVal.startOdometer)
+      ? Math.max(0, formVal.endOdometer - formVal.startOdometer)
+      : 0;
+
+    const payload: any = {
+      startLocation: formVal.startLocation,
+      endLocation: formVal.endLocation,
+      startOdometer: Number(formVal.startOdometer),
+      endOdometer: Number(formVal.endOdometer),
+      startTime: start.toISOString(),
+      endTime: end ? end.toISOString() : null,
+      baseInvoiceAmount: Number(formVal.baseInvoiceAmount),
+      fuelCharges: Number(formVal.fuelCharges),
+      tollParking: Number(formVal.tollParking),
+      driverBata: Number(formVal.driverBata),
+      permitAmount: Number(formVal.permitAmount),
+      advanceAmount: Number(formVal.advanceAmount),
+      driverAdvanceAmount: Number(formVal.driverAdvanceAmount),
+      paidAmount: Number(formVal.paidAmount),
+      notes: formVal.notes,
+      totalKm,
+      totalHours: hours,
+      totalDays: days,
+      totalAmount: undefined,
+      driverEarnings: undefined,
+      balanceAmount: undefined,
+      driverSettlementAmount: undefined
+    };
+
+    this.tripService.updateTrip(trip._id, payload).subscribe({
+      next: (res: any) => {
+        this.loading.set(false);
+        this.isEditing.set(false);
+        const updatedTrip = res && res.data ? res.data : res;
+        this.selectedTrip.set(updatedTrip);
+        this.loadInitialData();
+      },
+      error: (err) => {
+        this.loading.set(false);
+        console.error('Error saving trip changes:', err);
+      }
+    });
+  }
+
   closeTripDetail() {
     this.showTripDetail.set(false);
     this.showAdjustmentUI.set(false);
+    this.isEditing.set(false);
     this.selectedTrip.set(null);
     this.showHistory.set(true); // Show the main list again
     document.body.style.overflow = 'auto';

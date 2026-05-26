@@ -72,6 +72,7 @@ export class TripsComponent {
         permitAmount: [0],
         otherExpenses: [0],
         advanceAmount: [0],
+        driverAdvanceAmount: [0],
         baseInvoiceAmount: [0],
         totalAmount: [0],
         paidAmount: [0],
@@ -98,7 +99,7 @@ export class TripsComponent {
             const formVal = this.tripForm.getRawValue();
             const total = Number(formVal.totalAmount) || 0;
             const advance = Number(formVal.advanceAmount) || 0;
-            const paid = Number(formVal.paidAmount) || 0; // First declaration of paid
+            const paid = Number(formVal.paidAmount) || 0;
             const balance = total - (advance + paid);
 
             // Recalculate Driver Earnings based on Base Invoice ONLY
@@ -108,14 +109,15 @@ export class TripsComponent {
             const baseAmount = Number(formVal.baseInvoiceAmount) || 0;
             const earnings = Math.round(baseAmount * percentage);
 
-            // Driver Settlement = Paid (Customer Closing) - (Fuel + Toll + Bata + Permit + Other) - Commission
-            // Advance is excluded because it's always received directly by the Admin.
+            // Driver Settlement = (Driver Advance + Paid) - (Fuel + Toll + Bata + Permit + Other) - Commission
+            // Customer Booking Advance is excluded because it's always received directly by the Admin.
+            const driverAdvance = Number(formVal.driverAdvanceAmount) || 0;
             const fuel = Number(formVal.fuelCharges) || 0;
             const toll = Number(formVal.tollParking) || 0;
             const bata = Number(formVal.driverBata) || 0;
             const permit = Number(formVal.permitAmount) || 0;
             const other = Number(formVal.otherExpenses) || 0;
-            const settlement = paid - (fuel + toll + bata + permit + other) - earnings;
+            const settlement = (driverAdvance + paid) - (fuel + toll + bata + permit + other) - earnings;
 
             this.tripForm.patchValue({
                 balanceAmount: balance,
@@ -226,6 +228,8 @@ export class TripsComponent {
                 status: 'in-progress',
                 tripType: 'Cash',
                 totalAmount: 0,
+                advanceAmount: 0,
+                driverAdvanceAmount: 0,
                 startTime: this.formatDateForInput(now)
             });
         }
@@ -265,6 +269,7 @@ export class TripsComponent {
             driverBata: trip.driverBata,
             otherExpenses: trip.otherExpenses,
             advanceAmount: trip.advanceAmount,
+            driverAdvanceAmount: trip.driverAdvanceAmount || 0,
             totalAmount: trip.totalAmount,
             paidAmount: trip.paidAmount,
             balanceAmount: trip.balanceAmount,

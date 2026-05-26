@@ -7,14 +7,28 @@ import { AuthService } from '../../../services/auth.service';
 import { CustomerService } from '../../../services/customer.service';
 import { Trip, Vehicle, Customer } from '../../../models/rental.models';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import { startWith, forkJoin } from 'rxjs';
 import { ViewChild } from '@angular/core';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-driver-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ConfirmDialogComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    ConfirmDialogComponent,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatInputModule,
+    MatIconModule,
+    MatDividerModule
+  ],
   templateUrl: './driver-dashboard.html',
   styleUrls: ['./driver-dashboard.scss'],
 })
@@ -63,7 +77,18 @@ export class DriverDashboard implements OnInit {
 
   vehicles = signal<Vehicle[]>([]);
   customers = signal<Customer[]>([]);
-  displayCustomers = computed(() => this.customers().filter(c => !c.isGuest));
+  customerSearchQuery = signal('');
+
+  filteredDisplayCustomers = computed(() => {
+    const query = this.customerSearchQuery().toLowerCase().trim();
+    const customers = this.customers().filter(c => !c.isGuest);
+    if (!query) return customers;
+    return customers.filter(c =>
+      c.name.toLowerCase().includes(query) ||
+      c.phone.includes(query)
+    );
+  });
+  displayCustomers = computed(() => this.customers().filter(c => !c.isGuest)); // Keep for legacy but we'll use filtered one
   selectedTrip = signal<Trip | null>(null);
 
   activeTripCustomer = computed(() => {
@@ -78,7 +103,7 @@ export class DriverDashboard implements OnInit {
   showStartTripForm = signal(false);
   showCompleteTripForm = signal(false);
   showManualCompleteForm = signal(false);
-  showHistory = signal(false);
+  // showHistory = signal(false);
   showTripDetail = signal(false);
 
   // Advanced Settlement State
@@ -110,26 +135,27 @@ export class DriverDashboard implements OnInit {
     newCustomerEmail: [''],
     newCustomerAddress: [''],
     isGuest: [true],
-    
+
     startLocation: ['', Validators.required],
     startOdometer: ['', [Validators.required, Validators.min(0)]],
     startTime: ['', Validators.required],
-    
+
     endLocation: ['', Validators.required],
     endOdometer: ['', [Validators.required, Validators.min(0)]],
     endTime: ['', Validators.required],
-    
+
     baseInvoiceAmount: [0, [Validators.required, Validators.min(0)]],
     fuelCharges: [0, [Validators.min(0)]],
     tollParking: [0, [Validators.min(0)]],
     driverBata: [0, [Validators.min(0)]],
     permitAmount: [0, [Validators.min(0)]],
     advanceAmount: [0, [Validators.min(0)]],
-    
+    driverAdvanceAmount: [0, [Validators.min(0)]],
+
     paidAmount: [0, [Validators.required, Validators.min(0)]],
     totalAmount: [0, [Validators.required, Validators.min(0)]],
     driverEarnings: [0, [Validators.min(0)]],
-    
+
     tripType: ['Cash', Validators.required],
     paymentStatus: ['pending', Validators.required],
     notes: ['']
@@ -146,6 +172,8 @@ export class DriverDashboard implements OnInit {
     tollParking: [0, [Validators.min(0)]],
     driverBata: [0, [Validators.min(0)]],
     permitAmount: [0, [Validators.min(0)]],
+    advanceAmount: [0, [Validators.min(0)]],
+    driverAdvanceAmount: [0, [Validators.min(0)]],
     // otherExpensesList: this.fb.array([]),
 
 
@@ -197,7 +225,7 @@ export class DriverDashboard implements OnInit {
     const active = this.activeTrip();
     if (!f || !active) return 0;
     const total = Number(f.totalAmount) || 0;
-    const received = (Number(active.advanceAmount) || 0) + (Number(f.paidAmount) || 0);
+    const received = (Number(f.advanceAmount) || 0) + (Number(f.paidAmount) || 0);
     return Math.max(0, total - received);
   });
 
@@ -218,7 +246,7 @@ export class DriverDashboard implements OnInit {
     const f = this.manualCompleteFormVal();
     if (!f) return 0;
     const total = Number(f.totalAmount) || 0;
-    const received = Number(f.paidAmount) || 0; // Advance is hardcoded 0 for manual
+    const received = (Number(f.paidAmount) || 0) + (Number(f.advanceAmount) || 0);
     return Math.max(0, total - received);
   });
 
@@ -238,18 +266,18 @@ export class DriverDashboard implements OnInit {
     const f = this.manualCompleteForm.getRawValue();
     if (!f) return 0;
     const collectedByDriver = Number(f.paidAmount) || 0;
-    const advance = 0; // Hardcoded 0 for manual trip
+    const driverAdvance = Number(f.driverAdvanceAmount) || 0;
     const fuel = Number(f.fuelCharges) || 0;
     const toll = Number(f.tollParking) || 0;
     const bata = Number(f.driverBata) || 0;
     const permit = Number(f.permitAmount) || 0;
     const driverPayout = Number(f.driverEarnings) || 0;
-    
+
     // Total expenses that driver might have paid
     const driverExpenses = fuel + toll + bata + permit;
-    
+
     // Settlement = Cash Driver has (Advance + Paid) - Outgoings (Expenses + Earnings)
-    const settlement = (advance + collectedByDriver) - driverExpenses - driverPayout;
+    const settlement = (driverAdvance + collectedByDriver) - driverExpenses - driverPayout;
     return Number(settlement.toFixed(2));
   });
 
@@ -269,14 +297,15 @@ export class DriverDashboard implements OnInit {
     if (!f || !active) return 0;
 
     const collectedByDriver = Number(f.paidAmount) || 0;
+    const driverAdvance = Number(f.driverAdvanceAmount) || 0;
     const fuel = Number(f.fuelCharges) || 0;
     const toll = Number(f.tollParking) || 0;
     const bata = Number(f.driverBata) || 0;
     const permit = Number(f.permitAmount) || 0;
     const driverPayout = Number(f.driverEarnings) || 0;
-    
+
     const driverExpenses = fuel + toll + bata + permit + this.totalOtherExpenses();
-    const settlement = collectedByDriver - driverExpenses - driverPayout;
+    const settlement = (driverAdvance + collectedByDriver) - driverExpenses - driverPayout;
 
     return Number(settlement.toFixed(2));
   });
@@ -297,9 +326,14 @@ export class DriverDashboard implements OnInit {
     return 20;
   });
 
+  onCustomerSearch(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.customerSearchQuery.set(input.value);
+  }
+
   ngOnInit() {
-    this.loadInitialData();
     this.setupFormListeners();
+    this.loadInitialData();
   }
 
   setupFormListeners() {
@@ -310,6 +344,9 @@ export class DriverDashboard implements OnInit {
 
     this.manualCompleteForm.valueChanges.subscribe(() => {
       this.recalculateManualFinancials();
+      if (this.showManualCompleteForm()) {
+        localStorage.setItem('manualCompleteFormVal', JSON.stringify(this.manualCompleteForm.getRawValue()));
+      }
     });
 
     // When customer changes in manual form, check credit eligibility
@@ -322,6 +359,43 @@ export class DriverDashboard implements OnInit {
         }
       }
     });
+
+    // Dynamically adjust validators for startTripForm
+    this.startTripForm.get('customerId')?.valueChanges.subscribe(() => this.updateNewCustomerNameValidators());
+    this.startTripForm.get('isGuest')?.valueChanges.subscribe(() => this.updateNewCustomerNameValidators());
+
+    // Dynamically adjust validators for manualCompleteForm
+    this.manualCompleteForm.get('customerId')?.valueChanges.subscribe(() => this.updateNewCustomerNameValidators());
+    this.manualCompleteForm.get('isGuest')?.valueChanges.subscribe(() => this.updateNewCustomerNameValidators());
+
+    // Initial check
+    this.updateNewCustomerNameValidators();
+  }
+
+  updateNewCustomerNameValidators() {
+    // For startTripForm
+    const startCustId = this.startTripForm.get('customerId')?.value;
+    const startIsGuest = this.startTripForm.get('isGuest')?.value;
+    const startNameControl = this.startTripForm.get('newCustomerName');
+
+    if (startCustId === 'new' && !startIsGuest) {
+      startNameControl?.setValidators([Validators.required]);
+    } else {
+      startNameControl?.clearValidators();
+    }
+    startNameControl?.updateValueAndValidity({ emitEvent: false });
+
+    // For manualCompleteForm
+    const manualCustId = this.manualCompleteForm.get('customerId')?.value;
+    const manualIsGuest = this.manualCompleteForm.get('isGuest')?.value;
+    const manualNameControl = this.manualCompleteForm.get('newCustomerName');
+
+    if (manualCustId === 'new' && !manualIsGuest) {
+      manualNameControl?.setValidators([Validators.required]);
+    } else {
+      manualNameControl?.clearValidators();
+    }
+    manualNameControl?.updateValueAndValidity({ emitEvent: false });
   }
 
   recalculateManualFinancials() {
@@ -330,11 +404,12 @@ export class DriverDashboard implements OnInit {
     const toll = Number(f.tollParking) || 0;
     const bata = Number(f.driverBata) || 0;
     const permit = Number(f.permitAmount) || 0;
-    const advance = 0; // Hardcoded 0 for manual recordings
+    const advance = Number(f.advanceAmount) || 0;
 
-    const total = base + toll + bata + permit;
+    const total = base;
     const percentage = this.manualVehiclePercentage() / 100;
-    const earnings = Number((base * percentage).toFixed(2));
+    const earningsBase = Math.max(0, base - (toll + bata + permit));
+    const earnings = Number((earningsBase * percentage).toFixed(2));
 
     const isNew = f.customerId === 'new';
     const cust = isNew ? null : this.customers().find(c => c._id === f.customerId);
@@ -353,7 +428,7 @@ export class DriverDashboard implements OnInit {
       totalAmount: total,
       driverEarnings: earnings,
       paidAmount: paidAmount,
-      advanceAmount: 0,
+      advanceAmount: advance,
       tripType: tripType,
       paymentStatus: paymentStatus as any
     }, { emitEvent: false });
@@ -370,7 +445,7 @@ export class DriverDashboard implements OnInit {
     const toll = Number(f.tollParking) || 0;
     const bata = Number(f.driverBata) || 0;
     const permit = Number(f.permitAmount) || 0;
-    const advance = Number(active.advanceAmount) || 0;
+    const advance = Number(f.advanceAmount) || 0;
 
     // 1. Rule: Total Bill = Rental + Toll + Bata + Permit
     const total = base + toll + bata + permit;
@@ -397,6 +472,7 @@ export class DriverDashboard implements OnInit {
       totalAmount: total,
       driverEarnings: earnings,
       paidAmount: paidAmount,
+      advanceAmount: advance,
       tripType: tripType,
       paymentStatus: paymentStatus as any
     }, { emitEvent: false });
@@ -406,10 +482,16 @@ export class DriverDashboard implements OnInit {
   }
 
 
+  private isInitialLoad = true;
+
   loadInitialData() {
     this.loading.set(true);
-    this.tripService.getDriverTrips().subscribe({
-      next: (trips) => {
+    forkJoin({
+      trips: this.tripService.getDriverTrips(),
+      vehicles: this.vehicleService.getVehicles(),
+      customers: this.customerService.getAll()
+    }).subscribe({
+      next: ({ trips, vehicles, customers }) => {
         const active = trips.find(t => t.status === 'in-progress');
         this.activeTrip.set(active || null);
 
@@ -420,21 +502,26 @@ export class DriverDashboard implements OnInit {
         this.pastTrips.set(past);
         this.historyTrips.set(past);
 
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
-    });
+        this.vehicles.set(vehicles);
+        const savedVehicle = localStorage.getItem('smarttaxi_selected_vehicle');
+        if (savedVehicle && vehicles.find(veh => veh._id === savedVehicle)) {
+          this.selectedVehicleId.set(savedVehicle);
+          this.startTripForm.patchValue({ vehicleId: savedVehicle });
+        }
 
-    this.vehicleService.getVehicles().subscribe(v => {
-      this.vehicles.set(v);
-      const savedVehicle = localStorage.getItem('smarttaxi_selected_vehicle');
-      if (savedVehicle && v.find(veh => veh._id === savedVehicle)) {
-        this.selectedVehicleId.set(savedVehicle);
-        this.startTripForm.patchValue({ vehicleId: savedVehicle });
+        this.customers.set(customers);
+        this.loading.set(false);
+
+        if (this.isInitialLoad) {
+          this.isInitialLoad = false;
+          this.restoreManualCompleteDraft();
+        }
+      },
+      error: (err) => {
+        console.error('Error loading initial dashboard data', err);
+        this.loading.set(false);
       }
     });
-
-    this.customerService.getAll().subscribe(c => this.customers.set(c));
   }
 
   onVehicleSelectChange(event: any) {
@@ -456,6 +543,8 @@ export class DriverDashboard implements OnInit {
     }
     this.startTripForm.patchValue({ vehicleId: this.selectedVehicleId() });
     this.showManualCompleteForm.set(false);
+    localStorage.removeItem('showManualCompleteForm');
+    localStorage.removeItem('manualCompleteFormVal');
     this.showStartTripForm.set(true);
   }
 
@@ -468,9 +557,49 @@ export class DriverDashboard implements OnInit {
       await this.confirmDialog.open();
       return;
     }
-    this.manualCompleteForm.patchValue({ vehicleId: this.selectedVehicleId() });
+    this.manualCompleteForm.reset({
+      vehicleId: this.selectedVehicleId(),
+      isGuest: true,
+      advanceAmount: 0,
+      driverAdvanceAmount: 0
+    });
     this.showStartTripForm.set(false);
     this.showManualCompleteForm.set(true);
+    localStorage.setItem('showManualCompleteForm', 'true');
+    localStorage.setItem('manualCompleteFormVal', JSON.stringify(this.manualCompleteForm.getRawValue()));
+  }
+
+  restoreManualCompleteDraft() {
+    const showManual = localStorage.getItem('showManualCompleteForm');
+    if (showManual === 'true') {
+      this.showManualCompleteForm.set(true);
+      const savedData = localStorage.getItem('manualCompleteFormVal');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          this.manualCompleteForm.patchValue(parsed);
+          
+          setTimeout(() => {
+            this.recalculateManualFinancials();
+            this.updateNewCustomerNameValidators();
+          }, 100);
+        } catch (e) {
+          console.error('Error parsing manual complete form draft', e);
+        }
+      }
+    }
+  }
+
+  closeManualComplete() {
+    this.showManualCompleteForm.set(false);
+    localStorage.removeItem('showManualCompleteForm');
+    localStorage.removeItem('manualCompleteFormVal');
+    this.manualCompleteForm.reset({
+      vehicleId: this.selectedVehicleId(),
+      isGuest: true,
+      advanceAmount: 0,
+      driverAdvanceAmount: 0
+    });
   }
 
   onStartTrip() {
@@ -505,7 +634,7 @@ export class DriverDashboard implements OnInit {
 
     if (formVal.customerId === 'new') {
       const newCustomer = {
-        name: formVal.newCustomerName as string,
+        name: (formVal.newCustomerName || 'Guest') as string,
         phone: formVal.newCustomerPhone as string,
         email: formVal.newCustomerEmail as string,
         address: formVal.newCustomerAddress as string,
@@ -547,11 +676,11 @@ export class DriverDashboard implements OnInit {
         startLocation: formVal.startLocation as string,
         startOdometer: Number(formVal.startOdometer),
         startTime: new Date(formVal.startTime as string).toISOString(),
-        
+
         endLocation: formVal.endLocation as string,
         endOdometer: Number(formVal.endOdometer),
         endTime: new Date(formVal.endTime as string).toISOString(),
-        
+
         status: 'completed' as const,
         driverId: this.currentUser()?._id,
 
@@ -564,7 +693,8 @@ export class DriverDashboard implements OnInit {
         permitAmount: Number(fVal.permitAmount),
         totalAmount: Number(fVal.totalAmount),
         driverEarnings: Number(fVal.driverEarnings),
-        
+        driverAdvanceAmount: Number(fVal.driverAdvanceAmount || 0),
+
         balanceAmount: this.manualBalanceAmount(),
         driverSettlementAmount: this.manualDriverSettlementAmount(),
         tripType: fVal.tripType as any,
@@ -580,7 +710,14 @@ export class DriverDashboard implements OnInit {
         next: () => {
           this.showManualCompleteForm.set(false);
           this.loading.set(false);
-          this.manualCompleteForm.reset({ vehicleId: this.selectedVehicleId(), isGuest: true });
+          this.manualCompleteForm.reset({
+            vehicleId: this.selectedVehicleId(),
+            isGuest: true,
+            advanceAmount: 0,
+            driverAdvanceAmount: 0
+          });
+          localStorage.removeItem('showManualCompleteForm');
+          localStorage.removeItem('manualCompleteFormVal');
           this.loadInitialData();
         },
         error: () => this.loading.set(false)
@@ -589,7 +726,7 @@ export class DriverDashboard implements OnInit {
 
     if (formVal.customerId === 'new') {
       const newCustomer = {
-        name: formVal.newCustomerName as string,
+        name: (formVal.newCustomerName || 'Guest') as string,
         phone: formVal.newCustomerPhone as string,
         email: formVal.newCustomerEmail as string,
         address: formVal.newCustomerAddress as string,
@@ -644,6 +781,31 @@ export class DriverDashboard implements OnInit {
     });
   }
 
+  openCompleteTripForm() {
+    const active = this.activeTrip();
+    if (active) {
+      this.completeTripForm.reset({
+        endLocation: '',
+        endOdometer: '',
+        totalAmount: 0,
+        baseInvoiceAmount: 0,
+        paidAmount: 0,
+        driverEarnings: 0,
+        fuelCharges: 0,
+        tollParking: 0,
+        driverBata: 0,
+        permitAmount: 0,
+        advanceAmount: active.advanceAmount || 0,
+        driverAdvanceAmount: active.driverAdvanceAmount || 0,
+        tripType: 'Cash',
+        guestComments: '',
+        paymentStatus: 'pending'
+      });
+      this.showCompleteTripForm.set(true);
+      this.recalculateFinancials();
+    }
+  }
+
   onCompleteTrip() {
     if (this.completeTripForm.invalid || !this.activeTrip()) return;
 
@@ -656,7 +818,7 @@ export class DriverDashboard implements OnInit {
     const hours = Math.ceil(Math.abs(end.getTime() - start.getTime()) / 36e5);
     const days = Math.ceil(hours / 24);
 
-    const formVal = this.completeTripForm.value;
+    const formVal = this.completeTripForm.getRawValue();
     const data: Partial<Trip> = {
       endLocation: formVal.endLocation as string,
       endOdometer: Number(formVal.endOdometer),
@@ -665,7 +827,8 @@ export class DriverDashboard implements OnInit {
       driverBata: Number(formVal.driverBata),
       otherExpenses: 0, // Hidden for now
       // otherExpensesList: formVal.otherExpensesList as any,
-      advanceAmount: Number(this.activeTrip()?.advanceAmount || 0),
+      advanceAmount: Number(formVal.advanceAmount || 0),
+      driverAdvanceAmount: Number(formVal.driverAdvanceAmount || 0),
 
       paidAmount: Number(formVal.paidAmount),
       baseInvoiceAmount: Number(formVal.baseInvoiceAmount),
@@ -696,9 +859,9 @@ export class DriverDashboard implements OnInit {
     });
   }
 
-  toggleHistory() {
-    this.showHistory.set(!this.showHistory());
-  }
+  // toggleHistory() {
+  //   this.showHistory.set(!this.showHistory());
+  // }
 
   submitSettlement(trip: any, method: 'cash' | 'balance') {
     const isPositive = (trip.driverSettlementAmount || 0) > 0;

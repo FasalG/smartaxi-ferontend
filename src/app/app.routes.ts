@@ -37,7 +37,8 @@ export const routes: Routes = [
       // { path: 'maintenance', loadComponent: () => import('./features/admin/maintenance/maintenance').then(m => m.MaintenanceComponent) },
       { path: 'drivers', loadComponent: () => import('./features/admin/drivers/drivers').then(m => m.DriversComponent) },
       { path: 'settlement/driver', loadComponent: () => import('./features/admin/settlement/driver-settlement/driver-settlement').then(m => m.DriverSettlementComponent) },
-      { path: 'settlement/customer', loadComponent: () => import('./features/admin/settlement/customer-settlement/customer-settlement').then(m => m.CustomerSettlementComponent) }
+      { path: 'settlement/customer', loadComponent: () => import('./features/admin/settlement/customer-settlement/customer-settlement').then(m => m.CustomerSettlementComponent) },
+      { path: 'expense-types', loadComponent: () => import('./features/admin/expense-types/expense-types').then(m => m.ExpenseTypesComponent) }
     ]
   },
   {
@@ -46,7 +47,8 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', loadComponent: () => import('./features/driver/driver-dashboard/driver-dashboard').then(m => m.DriverDashboard) },
-      { path: 'history', loadComponent: () => import('./features/driver/trip-history/trip-history').then(m => m.TripHistoryComponent) }
+      { path: 'history', loadComponent: () => import('./features/driver/trip-history/trip-history').then(m => m.TripHistoryComponent) },
+      { path: 'expenses', loadComponent: () => import('./features/driver/expense-tracker/expense-tracker').then(m => m.ExpenseTrackerComponent) }
     ]
   },
   { path: '**', redirectTo: 'login' }

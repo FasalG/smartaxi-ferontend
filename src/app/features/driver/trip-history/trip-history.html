@@ -102,10 +102,17 @@
                                     <span class="smaller text-secondary">Total Bill</span>
                                     <span class="small fw-bold text-navy">₹{{ trip.totalAmount | number }}</span>
                                 </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1" *ngIf="trip.advanceAmount">
+                                    <span class="smaller text-secondary">Cust. Advance</span>
+                                    <span class="small fw-bold text-primary">₹{{ trip.advanceAmount | number }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1" *ngIf="trip.driverAdvanceAmount">
+                                    <span class="smaller text-secondary">Driver Advance</span>
+                                    <span class="small fw-bold text-warning">₹{{ trip.driverAdvanceAmount | number }}</span>
+                                </div>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="smaller text-secondary">Cash Recvd</span>
-                                    <span class="small fw-bold text-success">₹{{ (trip.advanceAmount||0) +
-                                        (trip.paidAmount||0) }}</span>
+                                    <span class="smaller text-secondary">Driver Cash Held</span>
+                                    <span class="small fw-bold text-success">₹{{ (trip.driverAdvanceAmount||0) + (trip.paidAmount||0) | number }}</span>
                                 </div>
                             </div>
 
@@ -144,71 +151,78 @@
                         <h6 class="fw-bold text-navy mb-0">Voucher #{{ selectedTrip()?._id?.slice(-6) }}</h6>
                         <div class="smaller text-secondary">{{ selectedTrip()?.startTime | date:'short' }}</div>
                     </div>
+                        </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button *ngIf="selectedTrip()?.driverPaymentStatus === 'pending' && !isEditing()" 
+                            (click)="startEditing()" 
+                            class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 d-flex align-items-center gap-1">
+                        <i class="bi bi-pencil-square"></i>
+                        <span class="smaller fw-bold">Edit</span>
+                    </button>
+                    <button *ngIf="isEditing()" 
+                            (click)="saveTripChanges()" 
+                            class="btn btn-sm btn-success rounded-pill px-3 py-1 d-flex align-items-center gap-1">
+                        <i class="bi bi-check-lg"></i>
+                        <span class="smaller fw-bold">Save</span>
+                    </button>
+                    <button *ngIf="isEditing()" 
+                            (click)="isEditing.set(false)" 
+                            class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-flex align-items-center gap-1">
+                        <i class="bi bi-x-lg"></i>
+                        <span class="smaller fw-bold">Cancel</span>
+                    </button>
+                    <span *ngIf="!isEditing()" class="badge rounded-pill px-3 py-2"
+                        [ngClass]="selectedTrip()?.paymentStatus === 'paid' ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'">
+                        {{ selectedTrip()?.paymentStatus === 'paid' ? 'SETTLED' : 'PENDING' }}
+                    </span>
                 </div>
-                <span class="badge rounded-pill px-3 py-2"
-                    [ngClass]="selectedTrip()?.paymentStatus === 'paid' ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'">
-                    {{ selectedTrip()?.paymentStatus === 'paid' ? 'SETTLED' : 'PENDING' }}
-                </span>
             </div>
         </div>
 
-        <div class="container-fluid px-0">
-            <div class="row g-3">
+        <div class="container-fluid px-0" *ngIf="!isEditing()">
+            <div class="row g-2 g-md-3">
                 <!-- Primary Info Cards -->
-                <div class="col-md-6">
-                    <div class="p-3 bg-white border rounded-4 shadow-sm">
+                <div class="col-6 col-md-6">
+                    <div class="p-2 p-md-3 bg-white border rounded-3 rounded-md-4 shadow-sm">
                         <label class="form-label-premium mb-1">Customer</label>
-                        <div class="fw-bold text-navy fs-6">{{ selectedTrip()?.customerName }}</div>
-                        <div class="smaller text-secondary">{{ selectedTrip()?.customerId?.phone || 'Contact Not
-                            Provided' }}</div>
+                        <div class="fw-bold text-navy fs-6 text-truncate">{{ selectedTrip()?.customerName }}</div>
+                        <div class="smaller text-secondary text-truncate">{{ selectedTrip()?.customerId?.phone || 'N/A' }}</div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="p-3 bg-white border rounded-4 shadow-sm">
+                <div class="col-6 col-md-6">
+                    <div class="p-2 p-md-3 bg-white border rounded-3 rounded-md-4 shadow-sm">
                         <label class="form-label-premium mb-1">Vehicle</label>
-                        <div class="fw-bold text-navy text-uppercase fs-6">{{ selectedTrip()?.vehicleId?.licensePlate }}
-                        </div>
-                        <div class="smaller text-secondary">{{ selectedTrip()?.vehicleId?.make }} {{
-                            selectedTrip()?.vehicleId?.model }}</div>
+                        <div class="fw-bold text-navy text-uppercase fs-6 text-truncate">{{ selectedTrip()?.vehicleId?.licensePlate }}</div>
+                        <div class="smaller text-secondary text-truncate">{{ selectedTrip()?.vehicleId?.make }} {{ selectedTrip()?.vehicleId?.model }}</div>
                     </div>
                 </div>
 
                 <!-- Journey Details -->
                 <div class="col-12">
-                    <div class="p-3 bg-white border rounded-4 shadow-sm">
-                        <div class="d-flex justify-content-between mb-3 align-items-center">
+                    <div class="p-2 p-md-3 bg-white border rounded-3 rounded-md-4 shadow-sm">
+                        <div class="d-flex justify-content-between mb-2 mb-md-3 align-items-center">
                             <h6 class="fw-bold text-navy mb-0 small uppercase tracking-wider">Journey Tracker</h6>
-                            <span class="badge bg-navy text-white smaller px-2 py-1">{{ selectedTrip()?.totalKm }} KM
-                                Driven</span>
+                            <span class="badge bg-navy text-white smaller px-2 py-1">{{ selectedTrip()?.totalKm }} KM Driven</span>
                         </div>
 
                         <div class="timeline-simple">
-                            <div
-                                class="timeline-item pb-3 position-relative ps-4 border-start border-2 border-success ms-2">
+                            <div class="timeline-item pb-2 pb-md-3 position-relative ps-4 border-start border-2 border-success ms-2">
                                 <div class="timeline-bullet bg-success"></div>
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="smaller text-secondary uppercase fw-bold"
-                                        style="font-size: 0.65rem;">Pickup</span>
-                                    <span class="smaller fw-bold text-navy bg-light px-2 rounded">{{
-                                        selectedTrip()?.startTime | date:'MMM d, h:mm a' }}</span>
+                                    <span class="smaller text-secondary uppercase fw-bold" style="font-size: 0.65rem;">Pickup</span>
+                                    <span class="smaller fw-bold text-navy bg-light px-2 rounded">{{ selectedTrip()?.startTime | date:'MMM d, h:mm a' }}</span>
                                 </div>
-                                <div class="small fw-bold text-navy text-truncate">{{ selectedTrip()?.startLocation }}
-                                </div>
-                                <div class="smaller text-secondary">Odo: {{ selectedTrip()?.startOdometer }}</div>
+                                <div class="small fw-bold text-navy text-truncate">{{ selectedTrip()?.startLocation }}</div>
+                                <div class="smaller text-secondary">Odo: {{ selectedTrip()?.startOdometer }} Km</div>
                             </div>
                             <div class="timeline-item position-relative ps-4 ms-2">
                                 <div class="timeline-bullet bg-danger"></div>
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="smaller text-secondary uppercase fw-bold"
-                                        style="font-size: 0.65rem;">Drop-off</span>
-                                    <span class="smaller fw-bold text-navy bg-light px-2 rounded"
-                                        *ngIf="selectedTrip()?.endTime">{{ selectedTrip()?.endTime | date:'MMM d, h:mm
-                                        a' }}</span>
+                                    <span class="smaller text-secondary uppercase fw-bold" style="font-size: 0.65rem;">Drop-off</span>
+                                    <span class="smaller fw-bold text-navy bg-light px-2 rounded" *ngIf="selectedTrip()?.endTime">{{ selectedTrip()?.endTime | date:'MMM d, h:mm a' }}</span>
                                 </div>
-                                <div class="small fw-bold text-navy text-truncate">{{ selectedTrip()?.endLocation || 'In
-                                    Progress' }}</div>
-                                <div class="smaller text-secondary">Odo: {{ selectedTrip()?.endOdometer || 'N/A' }}
-                                </div>
+                                <div class="small fw-bold text-navy text-truncate">{{ selectedTrip()?.endLocation || 'In Progress' }}</div>
+                                <div class="smaller text-secondary">Odo: {{ selectedTrip()?.endOdometer || 'N/A' }} Km</div>
                             </div>
                         </div>
                     </div>
@@ -216,38 +230,55 @@
 
                 <!-- Expenses Block -->
                 <div class="col-lg-6">
-                    <div class="p-3 bg-white border rounded-4 shadow-sm">
-                        <h6 class="fw-bold text-navy mb-3 small uppercase tracking-wider">Billed Amount</h6>
-                        <div class="d-flex flex-column gap-2">
+                    <div class="p-2 p-md-3 bg-white border rounded-3 rounded-md-4 shadow-sm">
+                        <h6 class="fw-bold text-navy mb-2 mb-md-3 small uppercase tracking-wider">Billed Amount</h6>
+                        <div class="d-flex flex-column gap-1 gap-md-2">
                             <div class="d-flex justify-content-between smaller border-bottom pb-1">
-                                <span class="text-secondary">Base Fare</span>
+                                <span class="text-secondary">Trip Amount</span>
                                 <span class="fw-bold text-navy">₹{{ selectedTrip()?.baseInvoiceAmount || 0 }}</span>
                             </div>
-                            <div class="d-flex justify-content-between smaller border-bottom pb-1"
-                                *ngIf="selectedTrip()?.tollParking">
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.tollParking">
                                 <span class="text-secondary">Toll & Parking</span>
-                                <span class="fw-bold text-navy">+ ₹{{ selectedTrip()?.tollParking }}</span>
+                                <span class="fw-bold text-navy">₹{{ selectedTrip()?.tollParking }}</span>
                             </div>
-                            <div class="d-flex justify-content-between smaller border-bottom pb-1"
-                                *ngIf="selectedTrip()?.driverBata">
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.driverBata">
                                 <span class="text-secondary">Driver Bata</span>
-                                <span class="fw-bold text-navy">+ ₹{{ selectedTrip()?.driverBata }}</span>
+                                <span class="fw-bold text-navy">₹{{ selectedTrip()?.driverBata }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.permitAmount">
+                                <span class="text-secondary">Permit Amount</span>
+                                <span class="fw-bold text-navy">₹{{ selectedTrip()?.permitAmount }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.fuelCharges">
+                                <span class="text-secondary">Fuel Expense</span>
+                                <span class="fw-bold text-navy">₹{{ selectedTrip()?.fuelCharges }}</span>
                             </div>
                             <div class="d-flex justify-content-between pt-1 text-navy">
                                 <span class="fw-bold">TOTAL CHARGE</span>
                                 <span class="fw-bold fs-5">₹{{ selectedTrip()?.totalAmount }}</span>
                             </div>
-                            <div
-                                class="mt-2 p-2 bg-success-soft rounded border border-success border-opacity-10 d-flex justify-content-between mb-2">
-                                <span class="smaller text-success fw-bold">Cash Received</span>
-                                <span class="smaller fw-bold text-success">₹{{ (selectedTrip()?.advanceAmount||0) +
-                                    (selectedTrip()?.paidAmount||0) }}</span>
+                            <!-- Cust Booking Advance -->
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.advanceAmount">
+                                <span class="text-secondary">Cust. Booking Advance (to Admin)</span>
+                                <span class="fw-bold text-primary">₹{{ selectedTrip()?.advanceAmount }}</span>
                             </div>
-                            <div
-                                class="p-2 bg-info-soft rounded border border-info border-opacity-10 d-flex justify-content-between">
+                            <!-- Driver Cash Advance -->
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.driverAdvanceAmount">
+                                <span class="text-secondary">Driver Cash Advance (from Admin)</span>
+                                <span class="fw-bold text-warning">₹{{ selectedTrip()?.driverAdvanceAmount }}</span>
+                            </div>
+                            <!-- Cust Paid to Driver -->
+                            <div class="d-flex justify-content-between smaller border-bottom pb-1" *ngIf="selectedTrip()?.paidAmount">
+                                <span class="text-secondary">Cust. Paid Balance (to Driver)</span>
+                                <span class="fw-bold text-success">₹{{ selectedTrip()?.paidAmount }}</span>
+                            </div>
+                            <div class="mt-2 p-2 bg-success-soft rounded border border-success border-opacity-10 d-flex justify-content-between mb-2">
+                                <span class="smaller text-success fw-bold">Driver Cash Held (Adv+Paid)</span>
+                                <span class="smaller fw-bold text-success">₹{{ (selectedTrip()?.driverAdvanceAmount||0) + (selectedTrip()?.paidAmount||0) }}</span>
+                            </div>
+                            <div class="p-2 bg-info-soft rounded border border-info border-opacity-10 d-flex justify-content-between">
                                 <span class="smaller text-info fw-bold">Your Earnings</span>
-                                <span class="smaller fw-bold text-info">₹{{ selectedTrip()?.driverEarnings || 0
-                                    }}</span>
+                                <span class="smaller fw-bold text-info">₹{{ selectedTrip()?.driverEarnings || 0 }}</span>
                             </div>
                         </div>
                     </div>
@@ -255,8 +286,8 @@
 
                 <!-- Settlement Block -->
                 <div class="col-lg-6">
-                    <div class="p-3 bg-navy text-white rounded-4 shadow-lg d-flex flex-column h-100">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="p-3 p-md-4 bg-navy text-white rounded-3 rounded-md-4 shadow-lg d-flex flex-column h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2 mb-md-3">
                             <h6 class="fw-bold mb-0 small uppercase tracking-wider text-white-50">Settlement Hub</h6>
                             <span class="badge smaller px-2 py-1" [ngClass]="{
                                 'bg-warning text-navy': selectedTrip()?.driverPaymentStatus === 'pending',
@@ -267,27 +298,20 @@
 
                         <div class="mb-3" *ngIf="selectedTrip()?.driverPaymentStatus === 'pending'">
                             <div class="small opacity-75 mb-1">Settlement Amount:</div>
-                            <div class="fs-3 fw-bold mb-1"
-                                [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'text-warning' : 'text-success'">
+                            <div class="fs-3 fw-bold mb-1" [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'text-warning' : 'text-success'">
                                 ₹{{ mathAbs(selectedTrip()?.driverSettlementAmount) }}
                             </div>
-                            <div class="smaller fw-bold p-2 rounded bg-white bg-opacity-10"
-                                [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'text-warning' : 'text-success'">
-                                {{ (selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'ACTION: HANDOVER TO ADMIN' :
-                                'ACTION: RECEIVE FROM ADMIN' }}
+                            <div class="smaller fw-bold p-2 rounded bg-white bg-opacity-10" [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'text-warning' : 'text-success'">
+                                {{ (selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'ACTION: HANDOVER TO ADMIN' : 'ACTION: RECEIVE FROM ADMIN' }}
                             </div>
                         </div>
 
                         <div class="mt-auto pt-2" *ngIf="selectedTrip()?.driverPaymentStatus === 'pending'">
                             <div class="d-flex flex-column gap-2" *ngIf="!showAdjustmentUI()">
-                                <button (click)="submitSettlement(selectedTrip(), 'cash')"
-                                    class="btn btn-warning fw-bold rounded-pill py-2 shadow">
-                                    Confirm {{ (selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'Handover' : 'Refund'
-                                    }}
+                                <button (click)="submitSettlement(selectedTrip(), 'cash')" class="btn btn-warning fw-bold rounded-pill py-2 shadow">
+                                    Confirm {{ (selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'Handover' : 'Refund' }}
                                 </button>
-                                <button *ngIf="availableLinkedTrips().length > 0"
-                                    (click)="submitSettlement(selectedTrip(), 'balance')"
-                                    class="btn btn-outline-light btn-sm border-white border-opacity-10 py-2">
+                                <button *ngIf="availableLinkedTrips().length > 0" (click)="submitSettlement(selectedTrip(), 'balance')" class="btn btn-outline-light btn-sm border-white border-opacity-10 py-2">
                                     Offset from Previous Balance
                                 </button>
                             </div>
@@ -295,25 +319,20 @@
                             <!-- Adjustment Form -->
                             <div *ngIf="showAdjustmentUI()" class="bg-white bg-opacity-10 p-3 rounded-4">
                                 <h6 class="smaller fw-bold mb-2">Select Linked Trip:</h6>
-                                <select class="form-select form-select-sm mb-2 fw-bold text-navy"
-                                    (change)="onAdjustmentTripChange($event)">
+                                <select class="form-select form-select-sm mb-2 fw-bold text-navy" (change)="onAdjustmentTripChange($event)">
                                     <option *ngFor="let t of availableLinkedTrips()" [value]="t._id">
                                         {{ t.customerName }} (₹{{ mathAbs(t.driverSettlementAmount) }})
                                     </option>
                                 </select>
                                 <div class="d-flex gap-2">
-                                    <input type="number" class="form-control form-control-sm fw-bold text-navy"
-                                        [value]="adjustmentAmount()" (input)="onAdjustmentAmountChange($event)">
-                                    <button (click)="confirmLinkedAdjustment()"
-                                        class="btn btn-sm btn-warning fw-bold px-3">Apply</button>
+                                    <input type="number" class="form-control form-control-sm fw-bold text-navy" [value]="adjustmentAmount()" (input)="onAdjustmentAmountChange($event)">
+                                    <button (click)="confirmLinkedAdjustment()" class="btn btn-sm btn-warning fw-bold px-3">Apply</button>
                                 </div>
-                                <button (click)="showAdjustmentUI.set(false)"
-                                    class="btn btn-link btn-sm text-white-50 w-100 mt-2 text-decoration-none smaller">Cancel</button>
+                                <button (click)="showAdjustmentUI.set(false)" class="btn btn-link btn-sm text-white-50 w-100 mt-2 text-decoration-none smaller">Cancel</button>
                             </div>
                         </div>
 
-                        <div *ngIf="selectedTrip()?.driverPaymentStatus === 'submitted'"
-                            class="text-center py-4 bg-white bg-opacity-10 rounded-4">
+                        <div *ngIf="selectedTrip()?.driverPaymentStatus === 'submitted'" class="text-center py-4 bg-white bg-opacity-10 rounded-4">
                             <div class="spinner-border text-info mb-3" style="width: 2rem; height: 2rem;"></div>
                             <div class="fw-bold mb-1">Submission Successful</div>
                             <div class="smaller opacity-75">Waiting for Admin to verify your HANDOVER.</div>
@@ -321,6 +340,96 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- EDIT FORM VIEW -->
+        <div class="container-fluid px-0" *ngIf="isEditing()">
+            <form [formGroup]="tripForm" (ngSubmit)="saveTripChanges()" class="card border-0 shadow-sm p-2.5 p-md-4 rounded-3 rounded-md-4 bg-white">
+                <h5 class="fw-bold text-navy mb-2 mb-md-4 fs-6 fs-md-5">Edit Trip Details</h5>
+                
+                <div class="row g-2 g-md-3">
+                    <!-- Locations -->
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Pickup Location</label>
+                        <input formControlName="startLocation" type="text" class="form-control-premium" placeholder="Pickup Location">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-premium">Drop-off Location</label>
+                        <input formControlName="endLocation" type="text" class="form-control-premium" placeholder="Drop-off Location">
+                    </div>
+
+                    <!-- Odometers -->
+                    <div class="col-6 col-md-6">
+                        <label class="form-label-premium">Start Odo (KM)</label>
+                        <input formControlName="startOdometer" type="number" class="form-control-premium" placeholder="Start Odometer">
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <label class="form-label-premium">End Odo (KM)</label>
+                        <input formControlName="endOdometer" type="number" class="form-control-premium" placeholder="End Odometer">
+                    </div>
+
+                    <!-- Date Times -->
+                    <div class="col-6 col-md-6">
+                        <label class="form-label-premium">Start Date & Time</label>
+                        <input formControlName="startTime" type="datetime-local" class="form-control-premium">
+                    </div>
+                    <div class="col-6 col-md-6">
+                        <label class="form-label-premium">End Date & Time</label>
+                        <input formControlName="endTime" type="datetime-local" class="form-control-premium">
+                    </div>
+
+                    <!-- Financials -->
+                    <div class="col-12 mt-4 border-top pt-3">
+                        <h6 class="fw-bold text-navy mb-3">Financial Information</h6>
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium text-primary">Trip Amount</label>
+                        <input formControlName="baseInvoiceAmount" type="number" class="form-control-premium border-primary border-2 shadow-sm">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium">Fuel Charges</label>
+                        <input formControlName="fuelCharges" type="number" class="form-control-premium">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium">Toll & Parking</label>
+                        <input formControlName="tollParking" type="number" class="form-control-premium">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium">Driver Bata</label>
+                        <input formControlName="driverBata" type="number" class="form-control-premium">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium">Permit Amount</label>
+                        <input formControlName="permitAmount" type="number" class="form-control-premium">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium text-success">Customer Advance</label>
+                        <input formControlName="advanceAmount" type="number" class="form-control-premium border-success border-2 shadow-sm">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium text-warning">Driver Advance (Admin)</label>
+                        <input formControlName="driverAdvanceAmount" type="number" class="form-control-premium border-warning border-2 shadow-sm">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label-premium text-success">Customer Paid</label>
+                        <input formControlName="paidAmount" type="number" class="form-control-premium border-success border-2 shadow-sm">
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="col-12 mt-3">
+                        <label class="form-label-premium">Notes</label>
+                        <textarea formControlName="notes" rows="3" class="form-control-premium" placeholder="Add any details, reason for edits, etc..."></textarea>
+                    </div>
+
+                    <div class="col-12 mt-4 text-end d-flex justify-content-end gap-2">
+                        <button type="button" (click)="isEditing.set(false)" class="btn btn-outline-secondary rounded-pill px-4 py-2">Cancel</button>
+                        <button type="submit" [disabled]="loading() || tripForm.invalid" class="btn btn-navy rounded-pill px-4 py-2">
+                            {{ loading() ? 'Saving...' : 'Save Changes' }}
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>

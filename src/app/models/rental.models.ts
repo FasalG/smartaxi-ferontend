@@ -133,6 +133,7 @@ export interface Expense {
     status: 'pending' | 'paid' | 'approved';
     expense_date: string;
     created_at: string;
+    imageUrl?: string;
 }
 
 export interface Maintenance {
@@ -182,6 +183,7 @@ export interface Trip {
     otherExpenses?: number;
     otherExpensesList?: { name: string, amount: number }[];
     advanceAmount?: number;
+    driverAdvanceAmount?: number;
     baseInvoiceAmount?: number;
     permitAmount?: number;
     totalAmount?: number;

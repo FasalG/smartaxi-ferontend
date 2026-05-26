@@ -146,7 +146,8 @@ export class SidebarComponent implements OnInit {
     } else if (role === 'driver') {
       return [
         { route: 'driver/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-        { route: 'driver/history', label: 'Trip History', icon: 'Calendar' }
+        { route: 'driver/history', label: 'Trip History', icon: 'Calendar' },
+        { route: 'driver/expenses', label: 'Expense Tracker', icon: 'Receipt' }
       ];
     } else {
       return [
@@ -159,7 +160,8 @@ export class SidebarComponent implements OnInit {
         { route: 'admin/customers', label: 'Customers', icon: 'Users' },
         { route: 'admin/drivers', label: 'Drivers', icon: 'Users' },
         { route: 'admin/settlement/driver', label: 'Driver Settlement', icon: 'Bank' },
-        { route: 'admin/settlement/customer', label: 'Customer Settlement', icon: 'Receipt' }
+        { route: 'admin/settlement/customer', label: 'Customer Settlement', icon: 'Receipt' },
+        { route: 'admin/expense-types', label: 'Expense Types', icon: 'Wrench' }
       ];
     }
   });

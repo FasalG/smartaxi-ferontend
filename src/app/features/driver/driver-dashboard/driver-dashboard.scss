@@ -86,6 +86,11 @@
         letter-spacing: 0.05em;
         margin-bottom: 0.5rem;
         display: block;
+
+        @media (max-width: 576px) {
+            font-size: 0.65rem;
+            margin-bottom: 0.25rem;
+        }
     }
 
     .form-control-premium {
@@ -98,6 +103,12 @@
         font-weight: 500;
         transition: all 0.2s;
         outline: none;
+
+        @media (max-width: 576px) {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
 
         &:focus {
             background: white;
@@ -342,5 +353,156 @@
         background: #f8fafc;
         border-radius: 12px;
         height: 100%;
+    }
+
+    /* Material Select Integration Styling */
+    ::ng-deep {
+        .no-subscript-container .mat-mdc-form-field-subscript-wrapper {
+            display: none;
+        }
+        
+        .no-subscript .mat-mdc-form-field-subscript-wrapper {
+            display: none;
+        }
+
+        .mat-mdc-select-panel {
+            min-width: 250px !important;
+            max-height: 350px !important;
+            border-radius: 16px !important;
+            padding-top: 0 !important;
+            box-shadow: 0 10px 40px rgba(15, 23, 42, 0.15) !important;
+            
+            .sticky-top {
+                background-color: white !important;
+                
+                @media (max-width: 576px) {
+                    padding: 8px 12px !important;
+                }
+            }
+
+            @media (max-width: 576px) {
+                min-width: 100% !important;
+                max-width: 100% !important;
+                max-height: 280px !important;
+            }
+        }
+
+        .mat-mdc-option {
+            min-height: 48px !important;
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+            
+            .fw-bold {
+                font-size: 0.9rem !important;
+                @media (max-width: 576px) {
+                    font-size: 0.825rem !important;
+                }
+            }
+            
+            .text-secondary {
+                font-size: 0.7rem !important;
+                @media (max-width: 576px) {
+                    font-size: 0.65rem !important;
+                }
+            }
+
+            @media (max-width: 576px) {
+                min-height: 42px !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+        }
+
+        .mat-mdc-form-field-flex {
+            border-radius: 12px !important;
+        }
+        
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .search-input-premium {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+
+            &:focus {
+                border-color: var(--navy);
+                background: white;
+                box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
+            }
+
+            @media (max-width: 576px) {
+                padding: 8px 12px !important;
+                font-size: 0.825rem !important;
+            }
+        }
+
+        .custom-mat-select {
+            .mat-mdc-text-field-wrapper {
+                padding: 0 16px !important;
+                background-color: #f1f5f9 !important;
+                border-radius: 12px !important;
+                height: 48px !important;
+                display: flex;
+                align-items: center;
+
+                @media (max-width: 576px) {
+                    height: 36px !important;
+                    padding: 0 12px !important;
+                    border-radius: 8px !important;
+                }
+            }
+
+            .mat-mdc-form-field-flex {
+                border-radius: 12px !important;
+                height: 48px !important;
+                align-items: center !important;
+
+                @media (max-width: 576px) {
+                    height: 36px !important;
+                    border-radius: 8px !important;
+                }
+            }
+
+            .mat-mdc-form-field-infix {
+                padding: 0 !important;
+                min-height: auto !important;
+                display: flex;
+                align-items: center;
+            }
+
+            .mat-mdc-select-value {
+                font-size: 0.95rem;
+                font-weight: 500;
+                color: #1e293b;
+
+                @media (max-width: 576px) {
+                    font-size: 0.85rem;
+                }
+            }
+
+            .mat-mdc-form-field-outline {
+                display: none !important; // Hide Material outline to match premium style
+            }
+            
+            border: 2px solid transparent;
+            border-radius: 12px;
+
+            @media (max-width: 576px) {
+                border-radius: 8px;
+            }
+            
+            &:focus-within {
+                border-color: var(--navy);
+            }
+        }
     }
 }
