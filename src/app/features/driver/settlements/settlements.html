@@ -1,0 +1,365 @@
+<div class="settlements-container p-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-navy mb-1">Settlement Hub</h2>
+      <p class="text-secondary small mb-0">Manage your cash in hand, record handovers to admin, and track trip payments.</p>
+    </div>
+    <button (click)="toggleForm()" class="btn rounded-pill px-4 shadow-sm"
+            [ngClass]="showForm() ? 'btn-outline-secondary' : 'btn-primary'">
+      <i class="bi" [ngClass]="showForm() ? 'bi-chevron-left' : 'bi-plus-lg'"></i>
+      {{ showForm() ? 'Back to History' : 'New Handover Request' }}
+    </button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading()" class="d-flex justify-content-center align-items-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER (When not loading) -->
+  <div *ngIf="!loading()">
+    <!-- 1. Stats Dashboard -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card p-3 bg-white border rounded-4 shadow-sm h-100">
+          <div class="smaller text-secondary uppercase fw-bold mb-1">Cash Collected</div>
+          <div class="h4 fw-bold mb-0 text-navy">₹{{ stats().cashCollected | number:'1.2-2' }}</div>
+          <p class="smaller text-muted mt-1 mb-0">Direct from customers</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card p-3 bg-white border rounded-4 shadow-sm h-100">
+          <div class="smaller text-secondary uppercase fw-bold mb-1">Expenses Logged</div>
+          <div class="h4 fw-bold mb-0 text-danger">₹{{ stats().expenses | number:'1.2-2' }}</div>
+          <p class="smaller text-muted mt-1 mb-0">Fuel, Toll, Bata etc.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card p-3 bg-white border rounded-4 shadow-sm h-100">
+          <div class="smaller text-secondary uppercase fw-bold mb-1">My Earnings</div>
+          <div class="h4 fw-bold mb-0 text-success">₹{{ stats().earnings | number:'1.2-2' }}</div>
+          <p class="smaller text-muted mt-1 mb-0">Driver commissions</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card p-3 border rounded-4 shadow-sm h-100 border-2 border-start"
+             [ngClass]="stats().netDue >= 0 ? 'bg-warning-soft border-warning' : 'bg-success-soft border-success'">
+          <div class="smaller uppercase fw-bold mb-1" [ngClass]="stats().netDue >= 0 ? 'text-warning-dark' : 'text-success-dark'">
+            {{ stats().netDue >= 0 ? 'DUE TO ADMIN' : 'DUE FROM ADMIN' }}
+          </div>
+          <div class="h4 fw-bold mb-0" [ngClass]="stats().netDue >= 0 ? 'text-warning-dark' : 'text-success-dark'">
+            ₹{{ Math.abs(stats().netDue) | number:'1.2-2' }}
+          </div>
+          <p class="smaller mt-1 mb-0" [ngClass]="stats().netDue >= 0 ? 'text-warning-dark' : 'text-success-dark'">
+            {{ stats().netDue >= 0 ? 'Cash in hand to handover' : 'Admin owes you' }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. HANDOVER SUBMISSION FORM VIEW -->
+    <div *ngIf="showForm()" class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+      <div class="card-header bg-navy text-white py-3">
+        <h5 class="mb-0 fw-bold">Initiate Handover Payment</h5>
+      </div>
+      <div class="card-body p-4">
+        <form [formGroup]="handoverForm" (ngSubmit)="onSubmit()" class="row g-4">
+          <!-- Handover Details Form (Left Column) -->
+          <div class="col-lg-5 border-end pe-lg-4">
+            <h6 class="fw-bold text-navy mb-3">1. Payment Details</h6>
+            
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Handover Amount (₹)</label>
+              <div class="input-group">
+                <span class="input-group-text border-0 bg-light">₹</span>
+                <input type="number" formControlName="amount" class="form-control border-0 bg-light" placeholder="0">
+              </div>
+              <div *ngIf="handoverForm.get('amount')?.touched && handoverForm.get('amount')?.errors?.['min']" class="text-danger smaller mt-1">
+                Amount must be greater than zero.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Payment Method</label>
+              <select formControlName="paymentMethod" class="form-select border-0 bg-light">
+                <option value="gpay">Google Pay (GPay)</option>
+                <option value="phonepe">PhonePe</option>
+                <option value="cash">Cash in Hand</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="other">Other UPI / UPI Apps</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Transfer Date</label>
+              <input type="date" formControlName="paymentDate" class="form-control border-0 bg-light">
+            </div>
+
+            <!-- Optional Transaction Reference -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">UTR / Transaction ID (Optional)</label>
+              <input type="text" formControlName="referenceId" class="form-control border-0 bg-light" placeholder="e.g. 192837465012">
+            </div>
+
+            <!-- Image Uploader (Auto compressed under 1MB) -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Upload Payment Receipt Screenshot (Optional)</label>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm position-relative rounded-pill px-3">
+                  <i class="bi bi-upload me-1"></i>
+                  Select File
+                  <input type="file" (change)="onFileSelected($event)" accept="image/*" 
+                         class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer">
+                </button>
+                <span class="small text-secondary" *ngIf="selectedFileName()">{{ selectedFileName() }}</span>
+                <span class="small text-muted" *ngIf="!selectedFileName()">No file selected (Auto-compresses < 1MB)</span>
+              </div>
+
+              <!-- Receipt Preview -->
+              <div *ngIf="selectedImageBase64" class="position-relative mt-3 border rounded-3 p-2 bg-light d-inline-block">
+                <img [src]="selectedImageBase64" class="img-thumbnail" style="max-height: 120px; object-fit: contain;">
+                <button type="button" (click)="removeImage()" 
+                        class="btn btn-danger btn-sm position-absolute rounded-circle p-1" 
+                        style="top: -8px; right: -8px; line-height: 1;" title="Remove Receipt">
+                  <i class="bi bi-x fs-6"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Driver Remarks</label>
+              <textarea formControlName="notes" rows="2" class="form-control border-0 bg-light" placeholder="Write any notes for admin..."></textarea>
+            </div>
+          </div>
+
+          <!-- Trip Allocation Grid (Right Column) -->
+          <div class="col-lg-7 ps-lg-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-navy mb-0">2. Match Trips with Handover Amount</h6>
+              <button type="button" (click)="applyAutoAllocation()" 
+                      class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                      [disabled]="handoverForm.value.amount <= 0">
+                <i class="bi bi-magic me-1"></i> Settle Oldest First
+              </button>
+            </div>
+            
+            <p class="small text-secondary mb-3">
+              Enter a total amount on the left, then click the magic wand to automatically match it to outstanding trips, or manually check trips and edit their allocations.
+            </p>
+
+            <div class="table-responsive rounded-3 border" style="max-height: 380px;">
+              <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <thead class="bg-light sticky-top">
+                  <tr>
+                    <th style="width: 40px;" class="text-center">Select</th>
+                    <th>Trip Details</th>
+                    <th class="text-end">Owed (₹)</th>
+                    <th class="text-end" style="width: 140px;">Allocate (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let trip of pendingTrips()">
+                    <td class="text-center">
+                      <input type="checkbox" 
+                             [checked]="selectedTripIds().has(trip._id!)"
+                             (change)="onTripSelect(trip, $event)"
+                             [disabled]="getTripOutstanding(trip) <= 0"
+                             class="form-check-input">
+                    </td>
+                    <td>
+                      <div class="fw-bold text-navy">#{{ trip._id?.slice(-6) }} - {{ trip.customerName }}</div>
+                      <div class="smaller text-secondary">
+                        {{ trip.startTime | date:'dd/MM/yy' }} | {{ trip.startLocation }} 
+                        <span *ngIf="trip.endLocation">→ {{ trip.endLocation }}</span>
+                      </div>
+                      <div class="smaller text-muted mt-1">
+                        Collected: ₹{{ (trip.driverAdvanceAmount || 0) + (trip.paidAmount || 0) }} | 
+                        Expenses: ₹{{ getTripExpenses(trip) }} | 
+                        Earnings: ₹{{ trip.driverEarnings }}
+                      </div>
+                    </td>
+                    <td class="text-end fw-bold">
+                      <span class="text-warning-dark" *ngIf="getTripOutstanding(trip) > 0">
+                        ₹{{ getTripOutstanding(trip) | number:'1.2-2' }}
+                      </span>
+                      <span class="text-muted" *ngIf="getTripOutstanding(trip) <= 0">
+                        Submitted/Paid
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      <input type="number" 
+                             [value]="allocations()[trip._id!] || 0"
+                             (change)="onAllocationChange(trip, $event)"
+                             [disabled]="!selectedTripIds().has(trip._id!)"
+                             class="form-control form-control-sm text-end border-0 bg-light font-monospace py-1"
+                             style="font-weight: 500;"
+                             placeholder="0">
+                    </td>
+                  </tr>
+                  <tr *ngIf="pendingTrips().length === 0">
+                    <td colspan="4" class="text-center py-5 text-secondary">
+                      <i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>
+                      All completed trips are fully settled. No pending dues!
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Allocation Summary footer -->
+            <div class="mt-4 p-3 bg-navy-soft rounded-3 d-flex justify-content-between align-items-center">
+              <div>
+                <span class="small fw-semibold text-navy d-block">Total Allocated to Selected Trips</span>
+                <span class="smaller text-secondary">Must match the handover amount</span>
+              </div>
+              <div class="text-end">
+                <div class="h5 fw-bold text-navy mb-0">₹{{ totalAllocated() | number:'1.2-2' }}</div>
+                <div class="smaller text-danger fw-semibold" *ngIf="totalAllocated() !== handoverForm.value.amount">
+                  Difference: ₹{{ Math.abs(totalAllocated() - (handoverForm.value.amount || 0)) | number:'1.2-2' }}
+                </div>
+                <div class="smaller text-success fw-bold" *ngIf="totalAllocated() === handoverForm.value.amount && totalAllocated() > 0">
+                  <i class="bi bi-check2-circle"></i> Amount fully matched
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="col-12 border-top pt-3 d-flex justify-content-end gap-2">
+            <button type="button" (click)="toggleForm()" class="btn btn-light rounded-pill px-4">Cancel</button>
+            <button type="submit" class="btn btn-navy rounded-pill px-5" 
+                    [disabled]="submitting() || handoverForm.invalid || totalAllocated() !== handoverForm.value.amount || totalAllocated() <= 0">
+              <span *ngIf="submitting()" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              {{ submitting() ? 'Submitting...' : 'Submit Handover' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 3. HANDOVER HISTORY TABLE VIEW -->
+    <div *ngIf="!showForm()" class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold text-navy">Handover Request History</h5>
+        <span class="badge bg-light text-navy border font-monospace">Count: {{ settlementHistory().length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th style="width: 140px;">Date</th>
+                <th>Voucher #</th>
+                <th>Method</th>
+                <th>UTR / Ref #</th>
+                <th class="text-end">Amount</th>
+                <th class="text-center">Status</th>
+                <th style="width: 100px;" class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let item of settlementHistory()">
+                <!-- Summary Row -->
+                <tr>
+                  <td class="text-secondary font-monospace">{{ item.paymentDate | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="fw-bold text-navy">{{ item.settlementNumber }}</td>
+                  <td>
+                    <span class="text-uppercase small fw-bold">
+                      <i class="bi" [ngClass]="item.paymentMethod === 'cash' ? 'bi-cash-coin text-success' : 'bi-phone-fill text-primary'"></i>
+                      {{ item.paymentMethod }}
+                    </span>
+                  </td>
+                  <td class="text-secondary font-monospace small">{{ item.referenceId || 'N/A' }}</td>
+                  <td class="text-end fw-bold text-navy">₹{{ item.amount | number:'1.2-2' }}</td>
+                  <td class="text-center">
+                    <span class="badge rounded-pill px-3 py-1 font-monospace"
+                          [ngClass]="{
+                            'bg-success-soft text-success border border-success': item.status === 'approved',
+                            'bg-warning-soft text-warning border border-warning': item.status === 'pending',
+                            'bg-danger-soft text-danger border border-danger': item.status === 'rejected'
+                          }">
+                      {{ item.status | uppercase }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <button (click)="toggleExpand(item._id!)" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 smaller">
+                      {{ expandedSettlementId() === item._id ? 'Close' : 'View' }}
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Expanded Detail Drawer Row -->
+                <tr *ngIf="expandedSettlementId() === item._id">
+                  <td colspan="7" class="bg-light p-4">
+                    <div class="row g-4">
+                      <!-- Left side: notes & receipt -->
+                      <div class="col-md-5">
+                        <div class="mb-3">
+                          <label class="smaller text-secondary uppercase fw-bold d-block mb-1">Driver Notes</label>
+                          <p class="small text-dark mb-0 bg-white p-2 border rounded-3 italic-text">
+                            {{ item.notes || 'No remarks provided by driver.' }}
+                          </p>
+                        </div>
+                        
+                        <div class="mb-3" *ngIf="item.adminNotes">
+                          <label class="smaller text-secondary uppercase fw-bold d-block mb-1">Admin Response</label>
+                          <p class="small text-dark mb-0 p-2 border rounded-3 border-warning" 
+                             [ngClass]="item.status === 'approved' ? 'bg-success-soft border-success' : 'bg-danger-soft border-danger'">
+                            {{ item.adminNotes }}
+                          </p>
+                        </div>
+
+                        <div *ngIf="item.receiptUrl">
+                          <label class="smaller text-secondary uppercase fw-bold d-block mb-1">Receipt Attachment</label>
+                          <a [href]="item.receiptUrl" target="_blank" title="View Full Size" class="d-inline-block border rounded-3 overflow-hidden bg-white p-1">
+                            <img [src]="item.receiptUrl" class="img-fluid" style="max-height: 180px; object-fit: contain;">
+                          </a>
+                        </div>
+                      </div>
+
+                      <!-- Right side: Linked Trip Allocations -->
+                      <div class="col-md-7">
+                        <label class="smaller text-secondary uppercase fw-bold d-block mb-2">Settled Trip Allocations</label>
+                        <div class="table-responsive rounded-3 border bg-white">
+                          <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead class="bg-light">
+                              <tr>
+                                <th>Trip</th>
+                                <th class="text-end">Original Net Owed</th>
+                                <th class="text-end">Allocated Paid</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr *ngFor="let link of item.trips">
+                                <td>
+                                  <span class="fw-semibold">#{{ asTrip(link.tripId)._id?.slice(-6) || 'N/A' }}</span> - {{ asTrip(link.tripId).customerName || 'N/A' }}
+                                  <div class="smaller text-secondary">{{ asTrip(link.tripId).startTime | date:'dd/MM/yy' }}</div>
+                                </td>
+                                <td class="text-end font-monospace">₹{{ asTrip(link.tripId).driverSettlementAmount | number:'1.2-2' }}</td>
+                                <td class="text-end font-monospace fw-bold text-success">₹{{ link.allocatedAmount | number:'1.2-2' }}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+              
+              <tr *ngIf="settlementHistory().length === 0">
+                <td colspan="7" class="text-center py-5 text-secondary">
+                  <i class="bi bi-card-list fs-2 d-block mb-2"></i>
+                  No previous handover submissions found.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

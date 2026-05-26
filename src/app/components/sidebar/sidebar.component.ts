@@ -147,7 +147,8 @@ export class SidebarComponent implements OnInit {
       return [
         { route: 'driver/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
         { route: 'driver/history', label: 'Trip History', icon: 'Calendar' },
-        { route: 'driver/expenses', label: 'Expense Tracker', icon: 'Receipt' }
+        { route: 'driver/expenses', label: 'Expense Tracker', icon: 'Receipt' },
+        { route: 'driver/settlements', label: 'Settlements', icon: 'Bank' }
       ];
     } else {
       return [

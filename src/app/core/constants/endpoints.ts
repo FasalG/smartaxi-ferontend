@@ -45,5 +45,12 @@ export const Endpoints = {
     },
     VEHICLES: {
         BASE: '/vehicles'
+    },
+    SETTLEMENTS: {
+        BASE: '/settlements',
+        PENDING_TRIPS: '/settlements/pending-trips',
+        ADMIN: '/settlements/admin',
+        APPROVE: (id: string) => `/settlements/${id}/approve`,
+        REJECT: (id: string) => `/settlements/${id}/reject`
     }
 };

@@ -2,8 +2,22 @@
     <!-- FILTERS (Hide on Print) -->
     <div class="no-print p-4 bg-white border-bottom shadow-sm">
         <div class="container-fluid">
-            <h4 class="fw-bold text-navy mb-4">Driver Settlement Hub</h4>
-            <form [formGroup]="filterForm" class="row g-3 align-items-end">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold text-navy mb-0">Driver Settlement Hub</h4>
+                <div class="nav nav-pills gap-2 no-print">
+                    <button class="btn btn-sm rounded-pill px-4" 
+                            [ngClass]="activeTab() === 'ledger' ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="setTab('ledger')">
+                        Settlement Ledgers
+                    </button>
+                    <button class="btn btn-sm rounded-pill px-4" 
+                            [ngClass]="activeTab() === 'handovers' ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="setTab('handovers')">
+                        Driver Handovers
+                    </button>
+                </div>
+            </div>
+            <form *ngIf="activeTab() === 'ledger'" [formGroup]="filterForm" class="row g-3 align-items-end">
                 <div class="col-sm-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">Select Driver</label>
                     <select formControlName="driverId" class="form-select border-0 shadow-sm rounded-pill px-3">
@@ -50,7 +64,7 @@
     </div>
 
     <!-- REPORT CONTENT -->
-    <div class="container-fluid p-4 position-relative">
+    <div *ngIf="activeTab() === 'ledger'" class="container-fluid p-4 position-relative">
         <!-- Loading Overlay -->
         <div *ngIf="loading()" class="loading-overlay d-flex justify-content-center align-items-center rounded-4">
             <div class="spinner-border text-primary" role="status">
@@ -241,6 +255,203 @@
                 </div>
                 <div class="modal-footer border-0 p-3">
                     <button type="button" class="btn btn-navy rounded-pill px-5 w-100" (click)="closeExpenses()">Close Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HANDOVERS TAB CONTENT (Admin Review) -->
+    <div *ngIf="activeTab() === 'handovers'" class="container-fluid p-4">
+        <div *ngIf="settlementLoading()" class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading handovers...</span>
+            </div>
+        </div>
+
+        <div *ngIf="!settlementLoading()" class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-navy">Pending & Past Driver Handover Requests</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Voucher</th>
+                                <th>Driver</th>
+                                <th>Method</th>
+                                <th>UTR / Ref #</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of handovers()">
+                                <td class="text-secondary font-monospace">{{ item.paymentDate | date:'dd/MM/yyyy HH:mm' }}</td>
+                                <td class="fw-bold text-navy">{{ item.settlementNumber }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ item.driverId?.name || 'Unknown Driver' }}</div>
+                                    <div class="smaller text-secondary">{{ item.driverId?.email }}</div>
+                                </td>
+                                <td>
+                                    <span class="text-uppercase small fw-bold">
+                                        <i class="bi" [ngClass]="item.paymentMethod === 'cash' ? 'bi-cash-coin text-success' : 'bi-phone-fill text-primary'"></i>
+                                        {{ item.paymentMethod }}
+                                    </span>
+                                </td>
+                                <td class="text-secondary font-monospace small">{{ item.referenceId || 'N/A' }}</td>
+                                <td class="text-end fw-bold text-navy">₹{{ item.amount | number:'1.2-2' }}</td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill px-3 py-1 font-monospace"
+                                          [ngClass]="{
+                                            'bg-success-soft text-success border border-success': item.status === 'approved',
+                                            'bg-warning-soft text-warning border border-warning': item.status === 'pending',
+                                            'bg-danger-soft text-danger border border-danger': item.status === 'rejected'
+                                          }">
+                                        {{ item.status | uppercase }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button *ngIf="item.status === 'pending'" (click)="openVerifyModal(item)" class="btn btn-sm btn-primary rounded-pill px-3 py-1 smaller">
+                                        Verify & Settle
+                                    </button>
+                                    <button *ngIf="item.status !== 'pending'" (click)="openVerifyModal(item)" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 smaller">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="handovers().length === 0">
+                                <td colspan="8" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-card-checklist fs-2 d-block mb-2"></i>
+                                    No handover requests submitted by drivers yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VERIFICATION MODAL -->
+    <div *ngIf="selectedHandoverForVerify()" class="modal fade show d-block no-print" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-navy text-white py-3">
+                    <h5 class="modal-title fw-bold">
+                        {{ selectedHandoverForVerify().status === 'pending' ? 'Verify Handover Request' : 'Handover Details' }} - 
+                        {{ selectedHandoverForVerify().settlementNumber }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" (click)="closeVerifyModal()"></button>
+                </div>
+                
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <!-- Left Panel: Payment Metadata & Image Receipt -->
+                        <div class="col-md-6 border-end pe-md-4 text-start">
+                            <h6 class="fw-bold text-navy mb-3">Payment Information</h6>
+                            
+                            <div class="mb-3">
+                                <span class="small text-secondary d-block">Driver</span>
+                                <span class="fw-bold">{{ selectedHandoverForVerify().driverId?.name }}</span>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <span class="small text-secondary d-block">Payment Method</span>
+                                    <span class="text-uppercase fw-bold text-navy">{{ selectedHandoverForVerify().paymentMethod }}</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="small text-secondary d-block">Amount Transferred</span>
+                                    <span class="fw-bold text-primary fs-5">₹{{ selectedHandoverForVerify().amount | number:'1.2-2' }}</span>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <span class="small text-secondary d-block">UTR / Reference</span>
+                                    <span class="font-monospace fw-semibold">{{ selectedHandoverForVerify().referenceId || 'N/A' }}</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="small text-secondary d-block">Transfer Date</span>
+                                    <span>{{ selectedHandoverForVerify().paymentDate | date:'dd/MM/yyyy' }}</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="small text-secondary d-block">Driver Notes</span>
+                                <p class="small text-muted p-2 bg-light rounded-3 italic-text mb-0">
+                                    {{ selectedHandoverForVerify().notes || 'No remarks provided by driver.' }}
+                                </p>
+                            </div>
+
+                            <!-- Receipt Image -->
+                            <div *ngIf="selectedHandoverForVerify().receiptUrl">
+                                <span class="small text-secondary d-block mb-1">Uploaded GPay / Transaction Receipt</span>
+                                <a [href]="selectedHandoverForVerify().receiptUrl" target="_blank" class="d-inline-block border rounded-3 p-1 bg-white">
+                                    <img [src]="selectedHandoverForVerify().receiptUrl" class="img-fluid rounded-2" style="max-height: 220px; object-fit: contain;">
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Trip Allocations & Response Notes -->
+                        <div class="col-md-6 ps-md-4 d-flex flex-column justify-content-between text-start">
+                            <div>
+                                <h6 class="fw-bold text-navy mb-3">Settlement Allocations</h6>
+                                <div class="table-responsive rounded-3 border bg-white mb-4" style="max-height: 200px;">
+                                    <table class="table table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Trip Voucher</th>
+                                                <th class="text-end">Due</th>
+                                                <th class="text-end">Allocated</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let link of selectedHandoverForVerify().trips">
+                                                <td>
+                                                    <div class="fw-semibold">#{{ link.tripId?._id?.slice(-6) || 'N/A' }}</div>
+                                                    <div class="smaller text-secondary">{{ link.tripId?.customerName || 'N/A' }}</div>
+                                                </td>
+                                                <td class="text-end font-monospace">₹{{ link.tripId?.driverSettlementAmount | number:'1.2-2' }}</td>
+                                                <td class="text-end font-monospace fw-bold text-success">₹{{ link.allocatedAmount | number:'1.2-2' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Admin Review Input (For pending handovers) -->
+                                <div class="mb-3" *ngIf="selectedHandoverForVerify().status === 'pending'">
+                                    <label class="form-label small fw-bold text-secondary">Review Notes / Feedback</label>
+                                    <textarea #notesInput (input)="adminNotes.set(notesInput.value)" rows="3" class="form-control bg-light border-0" 
+                                              placeholder="Specify rejection reason or approval notes..."></textarea>
+                                </div>
+
+                                <!-- Admin response (For completed ones) -->
+                                <div class="mb-3 p-3 bg-light rounded-3" *ngIf="selectedHandoverForVerify().status !== 'pending' && selectedHandoverForVerify().adminNotes">
+                                    <span class="small text-secondary d-block mb-1">Admin Response Note</span>
+                                    <p class="small text-dark fw-semibold mb-0">{{ selectedHandoverForVerify().adminNotes }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Actions (only for pending) -->
+                            <div class="d-flex gap-2 pt-3 border-top" *ngIf="selectedHandoverForVerify().status === 'pending'">
+                                <button type="button" (click)="rejectHandover()" class="btn btn-outline-danger rounded-pill px-3 flex-grow-1" [disabled]="processingHandover()">
+                                    Reject Request
+                                </button>
+                                <button type="button" (click)="approveHandover()" class="btn btn-success rounded-pill px-4 flex-grow-1" [disabled]="processingHandover()">
+                                    <span *ngIf="processingHandover()" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                    Confirm & Settle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-navy rounded-pill px-4 w-100" (click)="closeVerifyModal()">Close Details</button>
                 </div>
             </div>
         </div>

@@ -191,6 +191,8 @@ export interface Trip {
     balanceAmount?: number;
     paidAmount?: number;
     driverSettlementAmount?: number;
+    driverSettlementPaidAmount?: number;
+    submittedAmount?: number;
     driverEarnings?: number;
     guestComments?: string;
     status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
@@ -200,6 +202,30 @@ export interface Trip {
     driverPaymentSubmittedAt?: string;
     adminConfirmedAt?: string;
     notes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface DriverSettlementTrip {
+    tripId: string | Trip;
+    allocatedAmount: number;
+}
+
+export interface DriverSettlement {
+    _id?: string;
+    settlementNumber?: string;
+    driverId: any;
+    tenantId: any;
+    amount: number;
+    paymentMethod: 'gpay' | 'cash' | 'phonepe' | 'bank_transfer' | 'other';
+    paymentDate: string;
+    referenceId?: string;
+    receiptUrl?: string;
+    notes?: string;
+    status: 'pending' | 'approved' | 'rejected';
+    trips: DriverSettlementTrip[];
+    adminNotes?: string;
+    approvedAt?: string;
     createdAt?: string;
     updatedAt?: string;
 }

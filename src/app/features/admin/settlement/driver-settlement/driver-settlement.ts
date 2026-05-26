@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { SettlementService } from '../../../../services/settlement.service';
 
 @Component({
   selector: 'app-driver-settlement',
@@ -21,7 +22,91 @@ export class DriverSettlementComponent implements OnInit {
   private tripService = inject(TripService);
   private authService = inject(AuthService);
   private vehicleService = inject(VehicleService);
+  private settlementService = inject(SettlementService);
   private fb = inject(FormBuilder);
+
+  activeTab = signal<'ledger' | 'handovers'>('ledger');
+  handovers = signal<any[]>([]);
+  settlementLoading = signal(false);
+  
+  // Verify modal state
+  selectedHandoverForVerify = signal<any | null>(null);
+  adminNotes = signal('');
+  processingHandover = signal(false);
+
+  setTab(tab: 'ledger' | 'handovers') {
+    this.activeTab.set(tab);
+    if (tab === 'handovers') {
+      this.loadHandovers();
+    }
+  }
+
+  loadHandovers() {
+    this.settlementLoading.set(true);
+    this.settlementService.getAdminSettlements().subscribe({
+      next: (res: any) => {
+        const data = res && res.success ? res.data : (Array.isArray(res) ? res : []);
+        this.handovers.set(data);
+        this.settlementLoading.set(false);
+      },
+      error: () => this.settlementLoading.set(false)
+    });
+  }
+
+  openVerifyModal(item: any) {
+    this.selectedHandoverForVerify.set(item);
+    this.adminNotes.set('');
+  }
+
+  closeVerifyModal() {
+    this.selectedHandoverForVerify.set(null);
+  }
+
+  approveHandover() {
+    const handover = this.selectedHandoverForVerify();
+    if (!handover) return;
+
+    this.processingHandover.set(true);
+    this.settlementService.approveSettlement(handover._id, this.adminNotes()).subscribe({
+      next: () => {
+        this.processingHandover.set(false);
+        this.closeVerifyModal();
+        this.loadHandovers();
+        this.refreshData(); // Refresh ledger trips
+        alert('Settlement handover approved successfully!');
+      },
+      error: (err: any) => {
+        this.processingHandover.set(false);
+        alert(err.message || 'Error approving settlement');
+      }
+    });
+  }
+
+  rejectHandover() {
+    const handover = this.selectedHandoverForVerify();
+    if (!handover) return;
+
+    const notes = this.adminNotes().trim();
+    if (!notes) {
+      alert('Please specify a rejection reason in the notes field.');
+      return;
+    }
+
+    this.processingHandover.set(true);
+    this.settlementService.rejectSettlement(handover._id, notes).subscribe({
+      next: () => {
+        this.processingHandover.set(false);
+        this.closeVerifyModal();
+        this.loadHandovers();
+        this.refreshData(); // Refresh ledger trips
+        alert('Settlement handover rejected.');
+      },
+      error: (err: any) => {
+        this.processingHandover.set(false);
+        alert(err.message || 'Error rejecting settlement');
+      }
+    });
+  }
 
   drivers = signal<User[]>([]);
   vehicles = signal<Vehicle[]>([]);

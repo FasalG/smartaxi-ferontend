@@ -48,7 +48,8 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', loadComponent: () => import('./features/driver/driver-dashboard/driver-dashboard').then(m => m.DriverDashboard) },
       { path: 'history', loadComponent: () => import('./features/driver/trip-history/trip-history').then(m => m.TripHistoryComponent) },
-      { path: 'expenses', loadComponent: () => import('./features/driver/expense-tracker/expense-tracker').then(m => m.ExpenseTrackerComponent) }
+      { path: 'expenses', loadComponent: () => import('./features/driver/expense-tracker/expense-tracker').then(m => m.ExpenseTrackerComponent) },
+      { path: 'settlements', loadComponent: () => import('./features/driver/settlements/settlements').then(m => m.DriverSettlementsComponent) }
     ]
   },
   { path: '**', redirectTo: 'login' }
