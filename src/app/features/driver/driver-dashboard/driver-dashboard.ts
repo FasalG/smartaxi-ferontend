@@ -447,8 +447,8 @@ export class DriverDashboard implements OnInit {
     const permit = Number(f.permitAmount) || 0;
     const advance = Number(f.advanceAmount) || 0;
 
-    // 1. Rule: Total Bill = Rental + Toll + Bata + Permit
-    const total = base + toll + bata + permit;
+    // 1. Rule: Total Bill = Rental Amount
+    const total = base;
 
     // 2. Driver Earnings = % of Rental Amount
     const percentage = this.currentVehiclePercentage() / 100;

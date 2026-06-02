@@ -130,7 +130,8 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label-premium">Customer</label>
                         <mat-form-field appearance="outline" class="w-100 no-subscript-container custom-mat-select">
-                            <mat-select #startCustomerSelect formControlName="customerId" placeholder="Select Customer...">
+                            <mat-select #startCustomerSelect formControlName="customerId"
+                                placeholder="Select Customer...">
                                 <div class="px-3 py-2 sticky-top bg-white border-bottom shadow-sm">
                                     <input type="text" class="search-input-premium" (input)="onCustomerSearch($event)"
                                         placeholder="Type name or phone to search..."
@@ -248,7 +249,8 @@
                     <div class="col-md-6 mb-1 mb-md-0">
                         <label class="form-label-premium">Customer</label>
                         <mat-form-field appearance="outline" class="w-100 no-subscript-container custom-mat-select">
-                            <mat-select #manualCustomerSelect formControlName="customerId" placeholder="Select Customer...">
+                            <mat-select #manualCustomerSelect formControlName="customerId"
+                                placeholder="Select Customer...">
                                 <div class="px-3 py-2 sticky-top bg-white border-bottom shadow-sm">
                                     <input type="text" class="search-input-premium" (input)="onCustomerSearch($event)"
                                         placeholder="Type name or phone to search..."
@@ -310,7 +312,8 @@
 
                     <!-- START DETAILS -->
                     <div class="col-12 mt-2 mt-md-4">
-                        <h6 class="fw-bold text-navy border-bottom pb-1 pb-md-2 mb-1 mb-md-2" style="font-size: 0.85rem;">Trip Details</h6>
+                        <h6 class="fw-bold text-navy border-bottom pb-1 pb-md-2 mb-1 mb-md-2"
+                            style="font-size: 0.85rem;">Trip Details</h6>
                     </div>
                     <div class="col-12 col-md-4">
                         <label class="form-label-premium">Pickup Location</label>
@@ -343,7 +346,8 @@
                     </div>
 
                     <!-- FINANCIALS -->
-                    <div class="col-12 mt-2 mt-md-4 d-flex justify-content-between align-items-end border-bottom pb-1 pb-md-2">
+                    <div
+                        class="col-12 mt-2 mt-md-4 d-flex justify-content-between align-items-end border-bottom pb-1 pb-md-2">
                         <div>
                             <h6 class="fw-bold text-navy mb-0" style="font-size: 0.85rem;">Payment Details</h6>
                         </div>
@@ -371,11 +375,13 @@
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label-premium text-success">Customer Advance</label>
-                        <input formControlName="advanceAmount" type="number" class="form-control-premium border-success border-2 shadow-sm">
+                        <input formControlName="advanceAmount" type="number"
+                            class="form-control-premium border-success border-2 shadow-sm">
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label-premium text-warning">Driver Advance</label>
-                        <input formControlName="driverAdvanceAmount" type="number" class="form-control-premium border-warning border-2 shadow-sm">
+                        <input formControlName="driverAdvanceAmount" type="number"
+                            class="form-control-premium border-warning border-2 shadow-sm">
                     </div>
 
                     <div class="col-12 mt-2 mt-md-4">
@@ -391,7 +397,8 @@
                                     class="form-control-premium border-success border-2 shadow-sm">
                             </div>
                             <div class="col-12">
-                                <label class="form-label-premium text-info">Driver Payment ({{ manualVehiclePercentage() }}%)</label>
+                                <label class="form-label-premium text-info">Driver Payment ({{ manualVehiclePercentage()
+                                    }}%)</label>
                                 <input [value]="manualCompleteFormVal().driverEarnings" type="number"
                                     class="form-control-premium bg-light-info fw-bold" readonly>
                             </div>
@@ -424,24 +431,33 @@
                         <div class="row text-center gy-2 gy-md-3">
                             <div class="col-6">
                                 <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest">Total Bill</p>
-                                <h5 class="fw-bold mb-0 text-white" style="font-size: 1.1rem;">₹{{ manualCompleteFormVal().totalAmount || 0 }}</h5>
+                                <h5 class="fw-bold mb-0 text-white" style="font-size: 1.1rem;">₹{{
+                                    manualCompleteFormVal().totalAmount || 0 }}</h5>
                             </div>
                             <div class="col-6">
-                                <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest text-warning">Customer Balance</p>
-                                <h5 class="fw-bold mb-0 text-warning" style="font-size: 1.1rem;">₹{{ manualBalanceAmount() }}</h5>
+                                <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest text-warning">
+                                    Customer Balance</p>
+                                <h5 class="fw-bold mb-0 text-warning" style="font-size: 1.1rem;">₹{{
+                                    manualBalanceAmount() }}</h5>
                             </div>
 
                             <div class="col-6">
-                                <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest text-success">Driver Cash Held</p>
-                                <h5 class="fw-bold mb-0 text-success" style="font-size: 1.1rem;">+ ₹{{ (manualCompleteFormVal().driverAdvanceAmount || 0) + (manualCompleteFormVal().paidAmount || 0) }}</h5>
+                                <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest text-success">
+                                    Driver Cash Held</p>
+                                <h5 class="fw-bold mb-0 text-success" style="font-size: 1.1rem;">+ ₹{{
+                                    (manualCompleteFormVal().driverAdvanceAmount || 0) +
+                                    (manualCompleteFormVal().paidAmount || 0) }}</h5>
                             </div>
                             <div class="col-6">
-                                <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest text-danger">Outgoings</p>
-                                <h5 class="fw-bold mb-0 text-danger" style="font-size: 1.1rem;">- ₹{{ manualOutgoings() }}</h5>
+                                <p class="smaller text-white-50 mb-0.5 mb-md-1 uppercase tracking-widest text-danger">
+                                    Outgoings</p>
+                                <h5 class="fw-bold mb-0 text-danger" style="font-size: 1.1rem;">- ₹{{ manualOutgoings()
+                                    }}</h5>
                             </div>
 
                             <div class="col-12 mt-2 pt-2 border-top border-white-10">
-                                <p class="smaller text-white-75 mb-1.5 mb-md-2 uppercase tracking-widest fw-bold">Admin Settlement</p>
+                                <p class="smaller text-white-75 mb-1.5 mb-md-2 uppercase tracking-widest fw-bold">Admin
+                                    Settlement</p>
                                 <div class="p-2 p-md-3 rounded-3 d-inline-block w-100"
                                     [ngClass]="manualDriverSettlementAmount() >= 0 ? 'bg-success text-white' : 'bg-danger text-white'">
                                     <h5 class="fw-bold mb-0" style="font-size: 1.15rem;">
@@ -457,7 +473,8 @@
                     <div class="col-12 mt-2 mt-md-4 text-center">
                         <button type="submit" [disabled]="loading() || manualCompleteForm.invalid"
                             class="btn btn-navy-soft btn-md w-100 rounded-pill shadow-lg py-2 py-md-3">
-                            <span class="fw-bold" style="font-size: 0.95rem;">{{ loading() ? 'Processing...' : 'Finalize Trip & Save Voucher' }}</span>
+                            <span class="fw-bold" style="font-size: 0.95rem;">{{ loading() ? 'Processing...' : 'Finalize
+                                Trip & Save Voucher' }}</span>
                         </button>
                     </div>
                 </form>
@@ -475,8 +492,7 @@
                             <h4 class="fw-bold mb-0">{{ activeTrip()?.customerName }}</h4>
                         </div>
                         <div class="col-auto">
-                            <button (click)="openCompleteTripForm()"
-                                class="btn btn-warning fw-bold px-4 rounded-pill">
+                            <button (click)="openCompleteTripForm()" class="btn btn-warning fw-bold px-4 rounded-pill">
                                 Complete Trip
                             </button>
                         </div>
@@ -554,11 +570,13 @@
                             </div>
                             <div class="col-6 col-md-3">
                                 <label class="form-label-premium text-success">Customer Advance</label>
-                                <input formControlName="advanceAmount" type="number" class="form-control-premium border-success border-2 shadow-sm">
+                                <input formControlName="advanceAmount" type="number"
+                                    class="form-control-premium border-success border-2 shadow-sm">
                             </div>
                             <div class="col-6 col-md-3">
                                 <label class="form-label-premium text-warning">Driver Advance (Admin)</label>
-                                <input formControlName="driverAdvanceAmount" type="number" class="form-control-premium border-warning border-2 shadow-sm">
+                                <input formControlName="driverAdvanceAmount" type="number"
+                                    class="form-control-premium border-warning border-2 shadow-sm">
                             </div>
 
                             <!-- Line Break / Totals Section -->
@@ -623,7 +641,8 @@
                                 <h4 class="fw-bold mb-0 text-warning">₹{{ balanceAmount() }}</h4>
                             </div>
                             <div class="col-6 col-md-3">
-                                <p class="smaller text-white-50 mb-1 uppercase tracking-widest text-success">Driver Cash Held (Adv+Paid)</p>
+                                <p class="smaller text-white-50 mb-1 uppercase tracking-widest text-success">Driver Cash
+                                    Held (Adv+Paid)</p>
                                 <h4 class="fw-bold mb-0 text-success">
                                     + ₹{{ (completeFormVal().driverAdvanceAmount || 0) +
                                     (completeFormVal().paidAmount || 0) }}

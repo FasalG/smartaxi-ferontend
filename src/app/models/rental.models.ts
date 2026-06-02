@@ -125,15 +125,22 @@ export interface Payment {
 export interface Expense {
     _id?: string;
     id?: string;
-    expense_number: string;
-    category: 'maintenance' | 'fuel' | 'insurance' | 'utilities' | 'salary' | 'rent' | 'marketing' | 'other';
-    description: string;
-    vendor: string;
+    expense_number?: string;
+    expenseNumber?: string;
+    category?: 'maintenance' | 'fuel' | 'insurance' | 'utilities' | 'salary' | 'rent' | 'marketing' | 'other';
+    expenseType?: string;
+    description?: string;
+    remarks?: string;
+    vendor?: string;
     amount: number;
-    status: 'pending' | 'paid' | 'approved';
-    expense_date: string;
-    created_at: string;
+    status: 'pending' | 'paid' | 'approved' | 'rejected';
+    expense_date?: string;
+    date?: string;
+    created_at?: string;
     imageUrl?: string;
+    vehicleId?: any;
+    driverId?: any;
+    tripId?: string | Trip;
 }
 
 export interface Maintenance {
@@ -204,6 +211,7 @@ export interface Trip {
     notes?: string;
     createdAt?: string;
     updatedAt?: string;
+    linkedExpenses?: Expense[];
 }
 
 export interface DriverSettlementTrip {

@@ -80,6 +80,9 @@
               <div *ngIf="handoverForm.get('amount')?.touched && handoverForm.get('amount')?.errors?.['min']" class="text-danger smaller mt-1">
                 Amount must be greater than zero.
               </div>
+              <div *ngIf="handoverForm.get('amount')?.touched && handoverForm.get('amount')?.errors?.['maxDueExceeded']" class="text-danger smaller mt-1">
+                Amount cannot exceed the net due to admin (₹{{ stats().netDue | number:'1.2-2' }}).
+              </div>
             </div>
 
             <div class="mb-3">
@@ -179,6 +182,17 @@
                         Collected: ₹{{ (trip.driverAdvanceAmount || 0) + (trip.paidAmount || 0) }} | 
                         Expenses: ₹{{ getTripExpenses(trip) }} | 
                         Earnings: ₹{{ trip.driverEarnings }}
+                      </div>
+                      
+                      <!-- Linked Expenses -->
+                      <div *ngIf="trip.linkedExpenses && trip.linkedExpenses.length > 0" class="mt-2 ps-2 border-start border-info border-2">
+                        <div class="smaller fw-bold text-info uppercase" style="font-size: 0.72rem;">Linked Logged Expenses:</div>
+                        <div *ngFor="let exp of trip.linkedExpenses" class="smaller text-secondary d-flex gap-2" style="font-size: 0.72rem;">
+                          <span>• {{ exp.expenseNumber || exp.expense_number }} ({{ exp.expenseType }}):</span>
+                          <span class="fw-semibold" [ngClass]="exp.status === 'approved' ? 'text-danger' : 'text-warning'">
+                            ₹{{ exp.amount }} [{{ exp.status }}]
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td class="text-end fw-bold">

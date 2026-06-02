@@ -210,19 +210,61 @@ export class DriverSettlementComponent implements OnInit {
     });
   });
 
+  filteredHandovers = computed(() => {
+    const filters = this.formValues();
+    const handovers = this.handovers();
+    if (!filters) return handovers;
+
+    return handovers.filter((item: any) => {
+      const matchDriver = !filters.driverId || 
+        (typeof item.driverId === 'object' ? item.driverId?._id === filters.driverId : item.driverId === filters.driverId);
+      
+      const itemDate = new Date(item.paymentDate || item.createdAt).toISOString().split('T')[0];
+      const matchDate = itemDate >= (filters.startDate || '') && itemDate <= (filters.endDate || '');
+      
+      return matchDriver && matchDate;
+    });
+  });
+
   stats = computed(() => {
     const trips = this.filteredTrips();
-    const totalCollected = trips.reduce((sum, t) => sum + ((t.advanceAmount || 0) + (t.paidAmount || 0)), 0);
-    const totalExpenses = trips.reduce((sum, t) => sum + this.getTripExpenses(t), 0);
+    const expensesList = this.filteredExpenses();
+
+    const totalCollected = trips.reduce((sum, t) => sum + (t.paidAmount || 0), 0);
+    const totalTripExpenses = trips.reduce((sum, t) => sum + this.getTripExpenses(t), 0);
     const totalEarnings = trips.reduce((sum, t) => sum + (t.driverEarnings || 0), 0);
-    const netSettlement = trips.reduce((sum, t) => sum + (t.driverSettlementAmount || 0), 0);
+    
+    // Remaining trip settlement amount (after driver has submitted handovers), adjusted for linked approved expenses
+    const tripNetRemaining = trips.reduce((sum, t) => {
+      const originalDue = t.driverSettlementAmount || 0;
+      const confirmedPaid = t.driverSettlementPaidAmount || 0;
+      const approvedExpenses = t.linkedExpenses
+        ? t.linkedExpenses.filter((e: any) => e.status === 'approved').reduce((s, e) => s + (e.amount || 0), 0)
+        : 0;
+      return sum + Math.max(0, originalDue - confirmedPaid - approvedExpenses);
+    }, 0);
+    
+    // Separate approved logged expenses that are standalone (not linked to any trip)
+    const approvedLoggedExpenses = expensesList
+      .filter((e: any) => e.status === 'approved' && !e.tripId)
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      
+    // Final Net Settlement = Remaining Trip Settlement - Approved Standalone Expenses
+    const finalNet = tripNetRemaining - approvedLoggedExpenses;
+    
+    // Total approved logged expenses for display
+    const allApprovedExpenses = expensesList
+      .filter((e: any) => e.status === 'approved')
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
     
     return {
       count: trips.length,
       collected: totalCollected,
-      expenses: totalExpenses,
+      expenses: totalTripExpenses + allApprovedExpenses,
       earnings: totalEarnings,
-      net: netSettlement
+      tripNet: tripNetRemaining,
+      loggedExpenses: approvedLoggedExpenses,
+      net: finalNet
     };
   });
 
@@ -244,6 +286,7 @@ export class DriverSettlementComponent implements OnInit {
     this.loading.set(true);
     this.authService.getDrivers().subscribe(d => this.drivers.set(d));
     this.vehicleService.getVehicles().subscribe(v => this.vehicles.set(v));
+    this.loadExpenses(); // Load expenses initially
     this.refreshData();
   }
 
@@ -262,6 +305,22 @@ export class DriverSettlementComponent implements OnInit {
     return (trip.fuelCharges || 0) + (trip.tollParking || 0) + (trip.driverBata || 0) + (trip.permitAmount || 0) + (trip.otherExpenses || 0);
   }
 
+  getTripApprovedExpenses(trip: any): number {
+    if (!trip.linkedExpenses) return 0;
+    return trip.linkedExpenses
+      .filter((e: any) => e.status === 'approved')
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+  }
+
+  getTripRemaining(trip: any): number {
+    if (!trip) return 0;
+    if (trip.driverPaymentStatus === 'confirmed') return 0;
+    const originalDue = trip.driverSettlementAmount || 0;
+    const confirmedPaid = trip.driverSettlementPaidAmount || 0;
+    const approvedExpenses = this.getTripApprovedExpenses(trip);
+    return Math.max(0, originalDue - confirmedPaid - approvedExpenses);
+  }
+
   showExpenses(trip: any) {
     this.selectedTripExpenses.set(trip);
   }
@@ -275,18 +334,25 @@ export class DriverSettlementComponent implements OnInit {
   }
 
   exportToExcel() {
-    const data = this.filteredTrips().map(t => ({
-      Date: new Date(t.startTime).toLocaleDateString(),
-      Voucher: t._id?.slice(-6),
-      Customer: t.customerName,
-      'Trip Type': t.tripType,
-      'Total Bill': t.totalAmount,
-      'Cash Collected': (t.advanceAmount || 0) + (t.paidAmount || 0),
-      'Fuel/Toll/Bata': this.getTripExpenses(t),
-      'Driver Payment': t.driverEarnings || 0,
-      'Net Settlement': t.driverSettlementAmount,
-      Status: t.driverPaymentStatus
-    }));
+    const data = this.filteredTrips().map(t => {
+      const approvedExpenses = t.linkedExpenses
+        ? t.linkedExpenses.filter((e: any) => e.status === 'approved').reduce((sum, e) => sum + (e.amount || 0), 0)
+        : 0;
+      return {
+        Date: new Date(t.startTime).toLocaleDateString(),
+        Voucher: t._id?.slice(-6),
+        Customer: t.customerName,
+        'Trip Type': t.tripType,
+        'Total Bill': t.totalAmount,
+        'Cash Collected': t.paidAmount || 0,
+        'Fuel/Toll/Bata': this.getTripExpenses(t),
+        'Driver Payment': t.driverEarnings || 0,
+        'Original Settlement': t.driverSettlementAmount,
+        'Paid Amount': t.driverSettlementPaidAmount || 0,
+        'Outstanding Balance': Math.max(0, (t.driverSettlementAmount || 0) - (t.driverSettlementPaidAmount || 0) - approvedExpenses),
+        Status: t.driverPaymentStatus
+      };
+    });
 
     const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(data);
     const wb: XLSX.WorkBook = XLSX.utils.book_new();

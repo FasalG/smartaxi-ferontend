@@ -58,35 +58,37 @@ export class DriverSettlementsComponent implements OnInit {
   stats = computed(() => {
     const trips = this.pendingTrips();
     const standaloneExpenses = this.driverExpenses();
-    let totalCashCollected = 0;
-    let totalExpenses = 0;
-    let totalEarnings = 0;
 
-    trips.forEach(t => {
-      // Cash collected by driver = advance given on trip + paid directly by guest to driver
-      totalCashCollected += (t.driverAdvanceAmount || 0) + (t.paidAmount || 0);
-      
-      // Total expenses on trip = fuel + toll + bata + permit + other
-      const tripExpenses = (t.fuelCharges || 0) + (t.tollParking || 0) + (t.driverBata || 0) + (t.permitAmount || 0) + (t.otherExpenses || 0);
-      totalExpenses += tripExpenses;
-      
-      // Driver earnings
-      totalEarnings += t.driverEarnings || 0;
-    });
+    const totalCollected = trips.reduce((sum, t) => sum + (t.paidAmount || 0), 0);
+    const totalTripExpenses = trips.reduce((sum, t) => sum + this.getTripExpenses(t), 0);
+    const totalEarnings = trips.reduce((sum, t) => sum + (t.driverEarnings || 0), 0);
 
-    // Add standalone driver expenses (that are not rejected by admin)
-    standaloneExpenses.forEach(exp => {
-      if (exp.status !== 'rejected') {
-        totalExpenses += exp.amount || 0;
-      }
-    });
+    // Remaining trip settlement amount (after driver has submitted handovers), adjusted for linked approved expenses
+    const tripNetRemaining = trips.reduce((sum, t) => {
+      const originalDue = t.driverSettlementAmount || 0;
+      const confirmedPaid = t.driverSettlementPaidAmount || 0;
+      const approvedExpenses = t.linkedExpenses
+        ? t.linkedExpenses.filter((e: any) => e.status === 'approved').reduce((s, e) => s + (e.amount || 0), 0)
+        : 0;
+      return sum + Math.max(0, originalDue - confirmedPaid - approvedExpenses);
+    }, 0);
 
-    // Net balance driver owes admin = Cash collected - expenses - earnings
-    const netDue = totalCashCollected - totalExpenses - totalEarnings;
+    // Only subtract approved expenses that are standalone (not linked to any trip)
+    const approvedStandaloneExpenses = standaloneExpenses
+      .filter((e: any) => e.status === 'approved' && !e.tripId)
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+
+    // Final Net Settlement = Remaining Trip Settlement - Approved Standalone Expenses
+    const netDue = tripNetRemaining - approvedStandaloneExpenses;
+
+    // Total approved logged expenses for display
+    const allApprovedExpenses = standaloneExpenses
+      .filter((e: any) => e.status === 'approved')
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
     return {
-      cashCollected: totalCashCollected,
-      expenses: totalExpenses,
+      cashCollected: totalCollected,
+      expenses: totalTripExpenses + allApprovedExpenses,
       earnings: totalEarnings,
       netDue: netDue
     };
@@ -112,7 +114,17 @@ export class DriverSettlementsComponent implements OnInit {
   private initForm() {
     const today = new Date().toISOString().substring(0, 10);
     this.handoverForm = this.fb.group({
-      amount: [0, [Validators.required, Validators.min(1)]],
+      amount: [0, [
+        Validators.required, 
+        Validators.min(1),
+        (control: any) => {
+          const maxVal = this.stats ? this.stats().netDue : Infinity;
+          if (control.value > maxVal) {
+            return { maxDueExceeded: true };
+          }
+          return null;
+        }
+      ]],
       paymentMethod: ['gpay', Validators.required],
       paymentDate: [today, Validators.required],
       referenceId: [''], // UTR is optional
@@ -121,8 +133,7 @@ export class DriverSettlementsComponent implements OnInit {
 
     // Sync form amount with totalAllocated when it changes, but allow manual edits
     this.handoverForm.get('amount')?.valueChanges.subscribe(val => {
-      // If the user manually inputs an amount, we can auto-distribute it
-      // but we avoid infinite loops by checking values
+      this.redistributeHandoverAmount();
     });
   }
 
@@ -133,6 +144,7 @@ export class DriverSettlementsComponent implements OnInit {
       next: (trips: Trip[]) => {
         this.pendingTrips.set(trips || []);
         this.loading.set(false);
+        this.handoverForm.get('amount')?.updateValueAndValidity();
       },
       error: (err: any) => {
         console.error('Error loading pending trips:', err);
@@ -173,7 +185,39 @@ export class DriverSettlementsComponent implements OnInit {
     const originalDue = trip.driverSettlementAmount || 0;
     const confirmedPaid = trip.driverSettlementPaidAmount || 0;
     const pendingPaid = trip.submittedAmount || 0;
-    return Math.max(0, originalDue - confirmedPaid - pendingPaid);
+    
+    // Sum up approved expenses linked to this trip
+    const approvedExpenses = trip.linkedExpenses
+      ? trip.linkedExpenses.filter((e: any) => e.status === 'approved').reduce((sum, e) => sum + (e.amount || 0), 0)
+      : 0;
+
+    return Math.max(0, originalDue - confirmedPaid - pendingPaid - approvedExpenses);
+  }
+
+  redistributeHandoverAmount() {
+    const formAmount = this.handoverForm?.get('amount')?.value || 0;
+    let remaining = formAmount;
+    const allocMap: { [tripId: string]: number } = {};
+    const selected = new Set(this.selectedTripIds());
+
+    selected.forEach(id => {
+      const trip = this.pendingTrips().find(t => t._id === id);
+      if (trip) {
+        const outstanding = this.getTripOutstanding(trip);
+        if (outstanding > 0 && remaining > 0) {
+          const allocate = Math.min(outstanding, remaining);
+          allocMap[id] = parseFloat(allocate.toFixed(2));
+          remaining -= allocate;
+        } else {
+          allocMap[id] = 0;
+        }
+      } else {
+        selected.delete(id);
+      }
+    });
+
+    this.allocations.set(allocMap);
+    this.selectedTripIds.set(selected);
   }
 
   // Triggered when checking/unchecking a trip checkbox
@@ -181,23 +225,15 @@ export class DriverSettlementsComponent implements OnInit {
     const checked = (event.target as HTMLInputElement).checked;
     const tripId = trip._id!;
     const selected = new Set(this.selectedTripIds());
-    const allocMap = { ...this.allocations() };
 
     if (checked) {
       selected.add(tripId);
-      // Auto allocate its full outstanding balance
-      const outstanding = this.getTripOutstanding(trip);
-      allocMap[tripId] = outstanding;
     } else {
       selected.delete(tripId);
-      delete allocMap[tripId];
     }
 
     this.selectedTripIds.set(selected);
-    this.allocations.set(allocMap);
-    
-    // Update the form transfer amount to match the new allocated sum
-    this.handoverForm.patchValue({ amount: this.totalAllocated() }, { emitEvent: false });
+    this.redistributeHandoverAmount();
   }
 
   // Handles manual adjustments to a trip's allocation input
@@ -216,8 +252,7 @@ export class DriverSettlementsComponent implements OnInit {
       selected.add(tripId);
       allocMap[tripId] = clampedVal;
     } else {
-      selected.delete(tripId);
-      delete allocMap[tripId];
+      allocMap[tripId] = 0;
     }
 
     this.selectedTripIds.set(selected);
@@ -225,6 +260,7 @@ export class DriverSettlementsComponent implements OnInit {
 
     // Update the form transfer amount
     this.handoverForm.patchValue({ amount: this.totalAllocated() }, { emitEvent: false });
+    this.handoverForm.get('amount')?.updateValueAndValidity();
   }
 
   // Auto allocate custom entered amount from oldest to newest pending trips

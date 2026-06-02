@@ -118,10 +118,10 @@
 
                             <div class="d-flex justify-content-between align-items-center">
                                 <div *ngIf="trip.driverPaymentStatus === 'pending'"
-                                    [ngClass]="(trip.driverSettlementAmount || 0) > 0 ? 'text-danger' : 'text-success'"
+                                    [ngClass]="getTripRemaining(trip) > 0 ? 'text-danger' : (getTripRemaining(trip) < 0 ? 'text-success' : 'text-muted')"
                                     class="smaller fw-bold">
-                                    {{ (trip.driverSettlementAmount || 0) > 0 ? 'Handover' : 'Refund' }}: ₹{{
-                                    mathAbs(trip.driverSettlementAmount) }}
+                                    {{ getTripRemaining(trip) > 0 ? 'Handover' : (getTripRemaining(trip) < 0 ? 'Refund' : 'Settled') }}: ₹{{
+                                    mathAbs(getTripRemaining(trip)) }}
                                 </div>
                                 <div *ngIf="trip.driverPaymentStatus !== 'pending'"
                                     class="smaller text-secondary italic">
@@ -298,26 +298,26 @@
 
                         <div class="mb-3" *ngIf="selectedTrip()?.driverPaymentStatus === 'pending'">
                             <div class="small opacity-75 mb-1">Settlement Amount:</div>
-                            <div class="fs-3 fw-bold mb-1" [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'text-warning' : 'text-success'">
-                                ₹{{ mathAbs(selectedTrip()?.driverSettlementAmount) }}
+                            <div class="fs-3 fw-bold mb-1" [ngClass]="getTripRemaining(selectedTrip()) > 0 ? 'text-warning' : (getTripRemaining(selectedTrip()) < 0 ? 'text-success' : 'text-white')">
+                                ₹{{ mathAbs(getTripRemaining(selectedTrip())) }}
                             </div>
-                            <div class="smaller fw-bold p-2 rounded bg-white bg-opacity-10" [ngClass]="(selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'text-warning' : 'text-success'">
-                                {{ (selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'ACTION: HANDOVER TO ADMIN' : 'ACTION: RECEIVE FROM ADMIN' }}
+                            <div class="smaller fw-bold p-2 rounded" style="background-color: rgba(255, 255, 255, 0.1) !important;" [ngClass]="getTripRemaining(selectedTrip()) > 0 ? 'text-warning' : (getTripRemaining(selectedTrip()) < 0 ? 'text-success' : 'text-white-50')">
+                                {{ getTripRemaining(selectedTrip()) > 0 ? 'ACTION: HANDOVER TO ADMIN' : (getTripRemaining(selectedTrip()) < 0 ? 'ACTION: RECEIVE FROM ADMIN' : 'ACTION: FULLY SETTLED (NO CASH DUE)') }}
                             </div>
                         </div>
 
                         <div class="mt-auto pt-2" *ngIf="selectedTrip()?.driverPaymentStatus === 'pending'">
                             <div class="d-flex flex-column gap-2" *ngIf="!showAdjustmentUI()">
-                                <button (click)="submitSettlement(selectedTrip(), 'cash')" class="btn btn-warning fw-bold rounded-pill py-2 shadow">
-                                    Confirm {{ (selectedTrip()?.driverSettlementAmount || 0) > 0 ? 'Handover' : 'Refund' }}
+                                <button [disabled]="getTripRemaining(selectedTrip()) === 0" (click)="submitSettlement(selectedTrip(), 'cash')" class="btn btn-warning fw-bold rounded-pill py-2 shadow">
+                                    Confirm {{ getTripRemaining(selectedTrip()) >= 0 ? 'Handover' : 'Refund' }}
                                 </button>
-                                <button *ngIf="availableLinkedTrips().length > 0" (click)="submitSettlement(selectedTrip(), 'balance')" class="btn btn-outline-light btn-sm border-white border-opacity-10 py-2">
+                                <button *ngIf="availableLinkedTrips().length > 0 && getTripRemaining(selectedTrip()) !== 0" (click)="submitSettlement(selectedTrip(), 'balance')" class="btn btn-outline-light btn-sm border-white border-opacity-10 py-2">
                                     Offset from Previous Balance
                                 </button>
                             </div>
 
                             <!-- Adjustment Form -->
-                            <div *ngIf="showAdjustmentUI()" class="bg-white bg-opacity-10 p-3 rounded-4">
+                            <div *ngIf="showAdjustmentUI()" class="p-3 rounded-4" style="background-color: rgba(255, 255, 255, 0.1) !important;">
                                 <h6 class="smaller fw-bold mb-2">Select Linked Trip:</h6>
                                 <select class="form-select form-select-sm mb-2 fw-bold text-navy" (change)="onAdjustmentTripChange($event)">
                                     <option *ngFor="let t of availableLinkedTrips()" [value]="t._id">
@@ -332,10 +332,49 @@
                             </div>
                         </div>
 
-                        <div *ngIf="selectedTrip()?.driverPaymentStatus === 'submitted'" class="text-center py-4 bg-white bg-opacity-10 rounded-4">
+                        <div *ngIf="selectedTrip()?.driverPaymentStatus === 'submitted'" class="text-center py-4 rounded-4" style="background-color: rgba(255, 255, 255, 0.1) !important;">
                             <div class="spinner-border text-info mb-3" style="width: 2rem; height: 2rem;"></div>
                             <div class="fw-bold mb-1">Submission Successful</div>
                             <div class="smaller opacity-75">Waiting for Admin to verify your HANDOVER.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Standalone Linked Expenses -->
+                <div class="col-12" *ngIf="selectedTrip()?.linkedExpenses?.length">
+                    <div class="p-3 bg-white border rounded-4 shadow-sm">
+                        <h6 class="fw-bold text-navy mb-3 small uppercase tracking-wider">Linked Standalone Expenses</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead>
+                                    <tr class="text-secondary small fw-bold">
+                                        <th class="ps-3 py-2">Voucher #</th>
+                                        <th class="py-2">Category</th>
+                                        <th class="py-2">Date</th>
+                                        <th class="py-2">Remarks</th>
+                                        <th class="py-2 text-center">Status</th>
+                                        <th class="pe-3 py-2 text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let exp of selectedTrip()?.linkedExpenses">
+                                        <td class="ps-3 py-2 small fw-bold text-navy">{{ exp.expenseNumber || exp.expense_number }}</td>
+                                        <td class="py-2 small">{{ exp.expenseType }}</td>
+                                        <td class="py-2 small text-secondary">{{ exp.date | date:'mediumDate' }}</td>
+                                        <td class="py-2 small text-secondary text-truncate" style="max-width: 200px;" [title]="exp.remarks || ''">{{ exp.remarks || 'N/A' }}</td>
+                                        <td class="py-2 text-center">
+                                            <span class="badge rounded-pill px-2.5 py-1 smaller" [ngClass]="{
+                                                'bg-warning-soft text-warning': exp.status === 'pending',
+                                                'bg-success-soft text-success': exp.status === 'approved',
+                                                'bg-danger-soft text-danger': exp.status === 'rejected'
+                                            }">
+                                                {{ exp.status | uppercase }}
+                                            </span>
+                                        </td>
+                                        <td class="pe-3 py-2 small fw-bold text-end text-navy">₹{{ exp.amount | number }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -422,12 +461,12 @@
                         <textarea formControlName="notes" rows="3" class="form-control-premium" placeholder="Add any details, reason for edits, etc..."></textarea>
                     </div>
 
-                    <div class="col-12 mt-4 text-end d-flex justify-content-end gap-2">
+                    <!-- <div class="col-12 mt-4 text-end d-flex justify-content-end gap-2">
                         <button type="button" (click)="isEditing.set(false)" class="btn btn-outline-secondary rounded-pill px-4 py-2">Cancel</button>
                         <button type="submit" [disabled]="loading() || tripForm.invalid" class="btn btn-navy rounded-pill px-4 py-2">
                             {{ loading() ? 'Saving...' : 'Save Changes' }}
                         </button>
-                    </div>
+                    </div> -->
                 </div>
             </form>
         </div>

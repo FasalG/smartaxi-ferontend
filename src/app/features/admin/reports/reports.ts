@@ -129,9 +129,25 @@ export class ReportsComponent implements OnInit {
         this.selectedTrip.set(null);
     }
 
+    getTripApprovedExpenses(trip: any): number {
+        if (!trip || !trip.linkedExpenses) return 0;
+        return trip.linkedExpenses
+            .filter((e: any) => e.status === 'approved')
+            .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    }
+
+    getTripRemaining(trip: any): number {
+        if (!trip) return 0;
+        if (trip.driverPaymentStatus === 'confirmed') return 0;
+        const originalDues = (trip.driverSettlementAmount || 0) - (trip.driverSettlementPaidAmount || 0);
+        const approvedExpenses = this.getTripApprovedExpenses(trip);
+        return originalDues - approvedExpenses;
+    }
+
     async confirmDriverPayment(trip: any) {
-        const isRefund = (trip.driverSettlementAmount || 0) < 0;
-        const amount = Math.abs(trip.driverSettlementAmount || 0);
+        const remaining = this.getTripRemaining(trip);
+        const isRefund = remaining < 0;
+        const amount = Math.abs(remaining);
 
         this.confirmDialog.title = isRefund ? 'Confirm Cash Refund' : 'Confirm Cash Receipt';
         this.confirmDialog.message = isRefund
@@ -145,7 +161,8 @@ export class ReportsComponent implements OnInit {
             this.approving.set(true);
             const updateData: any = {
                 driverPaymentStatus: 'confirmed',
-                adminConfirmedAt: new Date().toISOString()
+                adminConfirmedAt: new Date().toISOString(),
+                driverSettlementAmount: trip.driverSettlementPaidAmount || 0
             };
 
             // ONLY for Cash trips, finalize customer payment during driver confirmation

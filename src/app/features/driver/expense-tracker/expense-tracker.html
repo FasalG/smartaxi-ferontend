@@ -85,6 +85,20 @@
                             </div>
                         </div>
 
+                        <!-- Optional Trip Selection -->
+                        <div class="mb-2.5">
+                            <label class="form-label-premium">Link to Trip (Optional)</label>
+                            <mat-form-field appearance="outline" class="w-100 no-subscript-container custom-mat-select">
+                                <mat-select formControlName="tripId" placeholder="No Trip (Standalone)">
+                                    <mat-option value="">No Trip (Standalone)</mat-option>
+                                    <mat-option *ngFor="let trip of tripsOwedToAdmin()" [value]="trip._id">
+                                        #{{ trip._id?.slice(-6) }} - {{ trip.customerName }} 
+                                        ({{ trip.startTime | date:'dd/MM/yy' }} | Owed: ₹{{ getTripOutstanding(trip) | number:'1.2-2' }})
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
                         <!-- Remarks / Notes -->
                         <div class="mb-3">
                             <label class="form-label-premium">Remarks / Notes</label>
@@ -184,7 +198,10 @@
                                     <td class="py-3">
                                         <div class="d-flex flex-column">
                                             <span class="fw-semibold text-navy smaller">{{ item.vehicleId?.licensePlate }}</span>
-                                            <span class="text-secondary" style="font-size: 0.75rem;">{{ item.vehicleId?.make }} {{ item.vehicleId?.model }}</span>
+                                            <span class="text-secondary mb-1" style="font-size: 0.75rem;">{{ item.vehicleId?.make }} {{ item.vehicleId?.model }}</span>
+                                            <span *ngIf="item.tripId" class="badge bg-info-soft text-info border border-info border-opacity-10 px-2 py-0.5 rounded-pill align-self-start animate-fade-in" style="font-size: 0.7rem;" [title]="item.tripId?.customerName ? 'Customer: ' + item.tripId.customerName : ''">
+                                                Trip: #{{ item.tripId?._id ? item.tripId._id.slice(-6) : (item.tripId ? item.tripId.toString().slice(-6) : '') }}
+                                            </span>
                                         </div>
                                     </td>
                                     <td class="py-3">
@@ -262,6 +279,9 @@
                                     </span>
                                     <span class="fw-semibold text-navy smaller mt-1">
                                         {{ item.vehicleId?.licensePlate }}
+                                    </span>
+                                    <span *ngIf="item.tripId" class="badge bg-info-soft text-info border border-info border-opacity-10 px-2 py-0.5 rounded-pill mt-1" style="font-size: 0.65rem; align-self: flex-start;">
+                                        Trip: #{{ item.tripId?._id ? item.tripId._id.slice(-6) : (item.tripId ? item.tripId.toString().slice(-6) : '') }}
                                     </span>
                                 </div>
                                 <span class="fw-bold text-navy fs-5">₹{{ item.amount | number: '1.2-2' }}</span>

@@ -48,16 +48,32 @@ export class TripHistoryComponent implements OnInit {
     return [];
   });
 
+  getTripRemaining(trip: any): number {
+    if (!trip) return 0;
+    if (trip.driverPaymentStatus === 'confirmed') return 0;
+    const approvedExpenses = (trip.linkedExpenses || [])
+      .filter((e: any) => e.status === 'approved')
+      .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    const originalDues = (trip.driverSettlementAmount || 0) - (trip.driverSettlementPaidAmount || 0);
+    return originalDues - approvedExpenses;
+  }
+
   totalSettlementOwed = computed(() => {
     return this.historyTrips()
-      .filter(t => t.driverPaymentStatus === 'pending' && (t.driverSettlementAmount || 0) > 0)
-      .reduce((sum, t) => sum + (t.driverSettlementAmount || 0), 0);
+      .filter(t => t.driverPaymentStatus === 'pending')
+      .reduce((sum, t) => {
+        const rem = this.getTripRemaining(t);
+        return sum + (rem > 0 ? rem : 0);
+      }, 0);
   });
 
   totalRefundDue = computed(() => {
     return Math.abs(this.historyTrips()
-      .filter(t => t.driverPaymentStatus === 'pending' && (t.driverSettlementAmount || 0) < 0)
-      .reduce((sum, t) => sum + (t.driverSettlementAmount || 0), 0));
+      .filter(t => t.driverPaymentStatus === 'pending')
+      .reduce((sum, t) => {
+        const rem = this.getTripRemaining(t);
+        return sum + (rem < 0 ? rem : 0);
+      }, 0));
   });
 
   ngOnInit() {
@@ -328,7 +344,7 @@ export class TripHistoryComponent implements OnInit {
       totalKm,
       totalHours: hours,
       totalDays: days,
-      totalAmount: undefined,
+      totalAmount: Number(formVal.baseInvoiceAmount),
       driverEarnings: undefined,
       balanceAmount: undefined,
       driverSettlementAmount: undefined

@@ -383,13 +383,29 @@
                                     (selectedTrip()?.driverPaymentStatus === 'submitted' ? 'Driver Submitted Request' :
                                     'Pending Driver Action') }}
                                 </h5>
-                                <p class="small text-white-75 mt-1 mb-0">
-                                    Net Result: <strong>₹{{ selectedTrip()?.driverSettlementAmount }}</strong>
-                                    <span *ngIf="selectedTrip() && (selectedTrip()!.driverSettlementAmount || 0) < 0"
-                                        class="ms-1 fs-6">(Refund due to driver)</span>
-                                    <span *ngIf="selectedTrip() && (selectedTrip()!.driverSettlementAmount || 0) > 0"
-                                        class="ms-1 fs-6">(Driver owes you)</span>
-                                </p>
+                                <div class="small text-white-75 mt-2 mb-0">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Original Settlement:</span>
+                                        <strong>₹{{ selectedTrip()?.driverSettlementAmount }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1" *ngIf="selectedTrip()?.driverSettlementPaidAmount">
+                                        <span>Paid Amount:</span>
+                                        <strong>₹{{ selectedTrip()?.driverSettlementPaidAmount }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1" *ngIf="getTripApprovedExpenses(selectedTrip())">
+                                        <span>Approved Expenses Offset:</span>
+                                        <strong class="text-warning">- ₹{{ getTripApprovedExpenses(selectedTrip()) }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between pt-1 border-top border-white border-opacity-20 mt-1">
+                                        <span>Outstanding Balance:</span>
+                                        <strong [ngClass]="getTripRemaining(selectedTrip()) > 0 ? 'text-warning' : (getTripRemaining(selectedTrip()) < 0 ? 'text-success' : 'text-white')">
+                                            ₹{{ mathAbs(getTripRemaining(selectedTrip())) }}
+                                            <span style="font-size: 0.75rem;" *ngIf="getTripRemaining(selectedTrip()) > 0">(Driver owes you)</span>
+                                            <span style="font-size: 0.75rem;" *ngIf="getTripRemaining(selectedTrip()) < 0">(Refund due to driver)</span>
+                                            <span style="font-size: 0.75rem;" *ngIf="getTripRemaining(selectedTrip()) === 0">(Fully settled)</span>
+                                        </strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -411,31 +427,31 @@
                                         <div class="text-start">
                                             <div class="fw-bold fs-6 text-info uppercase tracking-widest"
                                                 style="font-size: 0.75rem;">
-                                                Settlement Action: {{ (selectedTrip()?.driverSettlementAmount || 0) < 0
+                                                Settlement Action: {{ getTripRemaining(selectedTrip()) < 0
                                                     ? 'Cash Refund to Driver' : 'Cash Receipt from Driver' }} </div>
                                                     <div class="small text-navy opacity-75">
                                                         <ng-container
-                                                            *ngIf="(selectedTrip()?.driverSettlementAmount || 0) > 0">
+                                                            *ngIf="getTripRemaining(selectedTrip()) > 0">
                                                             Driver reports they have <strong>handed over</strong> ₹{{
-                                                            selectedTrip()?.driverSettlementAmount }}.
+                                                            getTripRemaining(selectedTrip()) }}.
                                                         </ng-container>
                                                         <ng-container
-                                                            *ngIf="(selectedTrip()?.driverSettlementAmount || 0) < 0">
+                                                            *ngIf="getTripRemaining(selectedTrip()) < 0">
                                                             Driver is <strong>requesting a refund</strong> of ₹{{
-                                                            mathAbs(selectedTrip()?.driverSettlementAmount) }}.
+                                                            mathAbs(getTripRemaining(selectedTrip())) }}.
                                                         </ng-container>
                                                     </div>
                                             </div>
                                             <button (click)="confirmDriverPayment(selectedTrip())"
                                                 [disabled]="approving()"
                                                 class="btn btn-info fw-bold px-4 rounded-pill shadow-sm text-white">
-                                                {{ approving() ? '...' : ((selectedTrip()?.driverSettlementAmount || 0)
+                                                {{ approving() ? '...' : (getTripRemaining(selectedTrip())
                                                 < 0 ? 'Confirm Refund Given' : 'Confirm Cash Received' ) }} </button>
                                         </div>
                                     </div>
 
 
-                                    <div *ngIf="selectedTrip()?.driverPaymentStatus === 'confirmed' && selectedTrip()?.paymentStatus === 'paid'"
+                                    <div *ngIf="selectedTrip()?.driverPaymentStatus === 'confirmed'"
                                         class="text-success fw-bold p-3 bg-success bg-opacity-10 rounded-3">
                                         <i class="bi bi-patch-check-fill me-2"></i> This trip is fully settled and
                                         confirmed.

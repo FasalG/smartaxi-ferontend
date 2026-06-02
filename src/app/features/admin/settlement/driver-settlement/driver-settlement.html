@@ -22,7 +22,7 @@
                     </button>
                 </div>
             </div>
-            <form *ngIf="activeTab() === 'ledger' || activeTab() === 'expenses'" [formGroup]="filterForm" class="row g-3 align-items-end">
+            <form *ngIf="activeTab() === 'ledger' || activeTab() === 'expenses' || activeTab() === 'handovers'" [formGroup]="filterForm" class="row g-3 align-items-end">
                 <div class="col-sm-6 col-lg-4 col-xl-2">
                     <label class="form-label small text-secondary fw-bold">Select Driver</label>
                     <select formControlName="driverId" class="form-select border-0 shadow-sm rounded-pill px-3">
@@ -51,7 +51,7 @@
                             <i class="bi" [ngClass]="loading() ? 'bi-arrow-repeat spin' : 'bi-download'"></i> 
                             {{ loading() ? 'Loading' : 'Fetch Records' }}
                         </button> -->
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2" *ngIf="activeTab() === 'ledger'">
                             <button (click)="exportToExcel()" class="btn btn-outline-success rounded-pill px-3 border shadow-sm" title="Export Excel">
                                 <i class="bi bi-file-earmark-excel"></i>
                             </button>
@@ -161,15 +161,40 @@
                                     {{ trip.startLocation }} 
                                     <span *ngIf="trip.endLocation">→ {{ trip.endLocation }}</span>
                                 </div>
+                                
+                                <!-- Linked Expenses -->
+                                <div *ngIf="trip.linkedExpenses && trip.linkedExpenses.length > 0" class="mt-2 ps-2 border-start border-info border-2">
+                                    <div class="smaller fw-bold text-info uppercase" style="font-size: 0.68rem; letter-spacing: 0.05em;">Linked Logged Expenses:</div>
+                                    <div *ngFor="let exp of trip.linkedExpenses" class="smaller text-secondary d-flex gap-2" style="font-size: 0.68rem;">
+                                        <span>• {{ exp.expenseNumber || exp.expense_number }} ({{ exp.expenseType }}):</span>
+                                        <span class="fw-semibold" [ngClass]="exp.status === 'approved' ? 'text-danger' : exp.status === 'rejected' ? 'text-muted' : 'text-warning'">
+                                            ₹{{ exp.amount }} [{{ exp.status }}]
+                                        </span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="text-end">₹{{ trip.totalAmount }}</td>
-                            <td class="text-end">₹{{ (trip.advanceAmount || 0) + (trip.paidAmount || 0) }}</td>
+                            <td class="text-end">₹{{ trip.paidAmount || 0 }}</td>
                             <td class="text-end text-danger cursor-pointer text-decoration-underline" (click)="showExpenses(trip)" title="View Details">
                                 ₹{{ getTripExpenses(trip) }}
                             </td>
                             <td class="text-end text-primary">₹{{ trip.driverEarnings || 0 }}</td>
-                            <td class="text-end fw-bold" [ngClass]="(trip?.driverSettlementAmount || 0) >= 0 ? 'text-warning' : 'text-success'">
-                                ₹{{ trip?.driverSettlementAmount || 0 }}
+                            <td class="text-end">
+                                <div class="fw-bold" [ngClass]="(trip?.driverSettlementAmount || 0) >= 0 ? 'text-warning' : 'text-success'">
+                                    ₹{{ trip?.driverSettlementAmount || 0 }}
+                                </div>
+                                <div class="smaller text-secondary mt-0.5" *ngIf="trip?.driverSettlementPaidAmount" style="font-size: 0.7rem;">
+                                    Paid: ₹{{ trip.driverSettlementPaidAmount }}
+                                </div>
+                                <div class="smaller text-info mt-0.5" *ngIf="getTripApprovedExpenses(trip) > 0" style="font-size: 0.7rem;">
+                                    Exp. Offset: -₹{{ getTripApprovedExpenses(trip) }}
+                                </div>
+                                <div class="smaller fw-semibold text-danger mt-0.5" *ngIf="getTripRemaining(trip) > 0" style="font-size: 0.7rem;">
+                                    Due: ₹{{ getTripRemaining(trip) }}
+                                </div>
+                                <div class="smaller fw-semibold text-success mt-0.5" *ngIf="getTripRemaining(trip) <= 0 && ((trip.driverSettlementAmount || 0) > 0)" style="font-size: 0.7rem;">
+                                    Settled
+                                </div>
                             </td>
                             <td class="text-center">
                                 <span class="badge rounded-pill smaller" 
@@ -197,6 +222,41 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Approved Logged Expenses Section -->
+            <div class="mt-4 pt-2" *ngIf="stats().loggedExpenses > 0">
+                <h6 class="fw-bold text-navy mb-2 uppercase tracking-wider text-start" style="font-size: 0.8rem; border-bottom: 2px dashed #e2e8f0; padding-bottom: 6px;">
+                    Approved Out-of-Pocket Logged Expenses
+                </h6>
+                <div class="table-responsive">
+                    <table class="table-settlement" style="font-size: 0.8rem; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Date</th>
+                                <th style="text-align: left;">Expense #</th>
+                                <th style="text-align: left;">Category</th>
+                                <th style="text-align: left;">Remarks / Notes</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <ng-container *ngFor="let exp of filteredExpenses()">
+                                <tr *ngIf="exp.status === 'approved'">
+                                    <td style="text-align: left;">{{ exp.date | date:'dd/MM/yy' }}</td>
+                                    <td class="font-monospace fw-semibold" style="text-align: left;">{{ exp.expenseNumber || exp.expense_number || 'N/A' }}</td>
+                                    <td style="text-align: left;"><span class="badge bg-secondary-soft text-secondary text-uppercase" style="font-size: 0.65rem;">{{ exp.expenseType }}</span></td>
+                                    <td class="text-secondary" style="text-align: left;">{{ exp.remarks || '-' }}</td>
+                                    <td class="text-end fw-bold text-navy">₹{{ exp.amount | number:'1.2-2' }}</td>
+                                </tr>
+                            </ng-container>
+                            <tr class="row-total fw-bold">
+                                <td colspan="4" class="text-end">Total Approved Expenses:</td>
+                                <td class="text-end text-danger">₹{{ stats().loggedExpenses | number:'1.2-2' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Footer (Signatures) -->
@@ -293,7 +353,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let item of handovers()">
+                            <tr *ngFor="let item of filteredHandovers()">
                                 <td class="text-secondary font-monospace">{{ item.paymentDate | date:'dd/MM/yyyy HH:mm' }}</td>
                                 <td class="fw-bold text-navy">{{ item.settlementNumber }}</td>
                                 <td>
@@ -327,7 +387,7 @@
                                     </button>
                                 </td>
                             </tr>
-                            <tr *ngIf="handovers().length === 0">
+                            <tr *ngIf="filteredHandovers().length === 0">
                                 <td colspan="8" class="text-center py-5 text-secondary">
                                     <i class="bi bi-card-checklist fs-2 d-block mb-2"></i>
                                     No handover requests submitted by drivers yet.
@@ -417,10 +477,36 @@
                                         <tbody>
                                             <tr *ngFor="let link of selectedHandoverForVerify().trips">
                                                 <td>
-                                                    <div class="fw-semibold">#{{ link.tripId?._id?.slice(-6) || 'N/A' }}</div>
-                                                    <div class="smaller text-secondary">{{ link.tripId?.customerName || 'N/A' }}</div>
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <span class="fw-bold text-navy">#{{ link.tripId?._id?.slice(-6) || 'N/A' }}</span>
+                                                        <span *ngIf="link.tripId?.tripType" class="badge bg-light text-navy border smaller py-0 px-1" style="font-size: 0.65rem;">
+                                                            {{ link.tripId?.tripType }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="smaller text-dark fw-semibold">
+                                                        {{ link.tripId?.customerName || 'N/A' }}
+                                                        <span *ngIf="link.tripId?.startTime" class="text-muted fw-normal ms-1">({{ link.tripId?.startTime | date:'dd/MM/yy' }})</span>
+                                                    </div>
+                                                    <div class="smaller text-secondary mt-1" style="font-size: 0.7rem; line-height: 1.2;">
+                                                        <i class="bi bi-geo-alt-fill text-danger me-0.5" style="font-size: 0.65rem;"></i>
+                                                        {{ link.tripId?.startLocation || 'N/A' }}
+                                                        <span *ngIf="link.tripId?.endLocation"> → {{ link.tripId?.endLocation }}</span>
+                                                    </div>
+                                                    <div class="smaller text-muted mt-0.5" style="font-size: 0.7rem;">
+                                                        Total Bill: <span class="fw-semibold text-navy">₹{{ link.tripId?.totalAmount || 0 }}</span> | Original Settle Due: <span class="fw-semibold text-navy">₹{{ link.tripId?.driverSettlementAmount || 0 }}</span>
+                                                    </div>
+
+                                                    <!-- Linked Approved Expenses Offset -->
+                                                    <div *ngIf="link.tripId?.linkedExpenses && getTripApprovedExpenses(link.tripId) > 0" class="mt-1.5 ps-2 border-start border-info border-2" style="font-size: 0.7rem;">
+                                                        <span class="text-info fw-bold d-block uppercase" style="font-size: 0.65rem;">Approved Expenses Offset:</span>
+                                                        <div *ngFor="let exp of link.tripId.linkedExpenses">
+                                                            <span *ngIf="exp.status === 'approved'" class="text-secondary smaller d-block">
+                                                                • {{ exp.expenseNumber || exp.expense_number }} ({{ exp.expenseType }}): ₹{{ exp.amount }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
                                                 </td>
-                                                <td class="text-end font-monospace">₹{{ link.tripId?.driverSettlementAmount | number:'1.2-2' }}</td>
+                                                <td class="text-end font-monospace">₹{{ getTripRemaining(link.tripId) | number:'1.2-2' }}</td>
                                                 <td class="text-end font-monospace fw-bold text-success">₹{{ link.allocatedAmount | number:'1.2-2' }}</td>
                                             </tr>
                                         </tbody>

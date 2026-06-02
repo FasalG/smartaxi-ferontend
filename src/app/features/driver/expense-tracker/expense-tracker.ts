@@ -4,7 +4,8 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ExpenseService } from '../../../services/expense.service';
 import { VehicleService } from '../../../services/vehicle.service';
 import { AuthService } from '../../../services/auth.service';
-import { Vehicle } from '../../../models/rental.models';
+import { SettlementService } from '../../../services/settlement.service';
+import { Vehicle, Trip } from '../../../models/rental.models';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
@@ -31,10 +32,12 @@ export class ExpenseTrackerComponent implements OnInit {
   private expenseService = inject(ExpenseService);
   private vehicleService = inject(VehicleService);
   private authService = inject(AuthService);
+  private settlementService = inject(SettlementService);
 
   expenseForm!: FormGroup;
   expenses = signal<any[]>([]);
   vehicles = signal<Vehicle[]>([]);
+  pendingTrips = signal<Trip[]>([]);
   vehicleSearchQuery = signal('');
   expenseTypes = signal<string[]>([]);
   isSubmitting = signal(false);
@@ -54,6 +57,24 @@ export class ExpenseTrackerComponent implements OnInit {
     );
   });
 
+  getTripOutstanding(trip: Trip): number {
+    const originalDue = trip.driverSettlementAmount || 0;
+    const confirmedPaid = trip.driverSettlementPaidAmount || 0;
+    const pendingPaid = trip.submittedAmount || 0;
+    const approvedExpenses = trip.linkedExpenses
+      ? trip.linkedExpenses.filter((e: any) => e.status === 'approved').reduce((sum, e) => sum + (e.amount || 0), 0)
+      : 0;
+    return originalDue - confirmedPaid - pendingPaid - approvedExpenses;
+  }
+
+  tripsOwedToAdmin = computed(() => {
+    const formTripId = this.expenseForm ? this.expenseForm.get('tripId')?.value : '';
+    return this.pendingTrips().filter(t => {
+      if (t._id === formTripId) return true;
+      return this.getTripOutstanding(t) > 0;
+    });
+  });
+
   toggleForm() {
     this.showForm.set(!this.showForm());
     if (!this.showForm()) {
@@ -67,6 +88,7 @@ export class ExpenseTrackerComponent implements OnInit {
     this.loadVehicles();
     this.loadExpenseTypes();
     this.loadExpenses();
+    this.loadPendingTrips();
   }
 
   private initForm() {
@@ -77,7 +99,8 @@ export class ExpenseTrackerComponent implements OnInit {
       date: [today, Validators.required],
       vehicleId: ['', Validators.required],
       remarks: [''],
-      imageUrl: ['']
+      imageUrl: [''],
+      tripId: ['']
     });
 
     // Listen to expenseType changes
@@ -130,12 +153,24 @@ export class ExpenseTrackerComponent implements OnInit {
     });
   }
 
+  loadPendingTrips() {
+    this.settlementService.getPendingTrips().subscribe({
+      next: (trips: Trip[]) => {
+        this.pendingTrips.set(trips || []);
+      },
+      error: (err) => {
+        console.error('Error loading pending trips:', err);
+      }
+    });
+  }
+
   onEdit(item: any) {
     this.editingExpenseId.set(item._id || item.id);
     this.showForm.set(true);
     
     const formattedDate = item.date ? new Date(item.date).toISOString().substring(0, 10) : '';
     const vehicleId = item.vehicleId && typeof item.vehicleId === 'object' ? item.vehicleId._id : item.vehicleId;
+    const tripId = item.tripId && typeof item.tripId === 'object' ? item.tripId._id : item.tripId;
 
     this.selectedImageBase64 = item.imageUrl || null;
     this.selectedFileName.set(item.imageUrl ? 'Receipt Image' : null);
@@ -146,7 +181,8 @@ export class ExpenseTrackerComponent implements OnInit {
       date: formattedDate,
       vehicleId: vehicleId || '',
       remarks: item.remarks || '',
-      imageUrl: item.imageUrl || ''
+      imageUrl: item.imageUrl || '',
+      tripId: tripId || ''
     });
   }
 
@@ -155,6 +191,7 @@ export class ExpenseTrackerComponent implements OnInit {
       this.expenseService.delete(id).subscribe({
         next: () => {
           this.loadExpenses();
+          this.loadPendingTrips();
         },
         error: (err) => {
           console.error('Error deleting expense', err);
@@ -179,6 +216,7 @@ export class ExpenseTrackerComponent implements OnInit {
     const formVal = this.expenseForm.value;
     const payload = {
       ...formVal,
+      tripId: formVal.tripId || null,
       imageUrl: this.selectedImageBase64
     };
 
@@ -194,6 +232,7 @@ export class ExpenseTrackerComponent implements OnInit {
           this.editingExpenseId.set(null);
           this.showForm.set(false);
           this.loadExpenses();
+          this.loadPendingTrips();
         },
         error: (err) => {
           this.isSubmitting.set(false);
@@ -206,6 +245,7 @@ export class ExpenseTrackerComponent implements OnInit {
           this.isSubmitting.set(false);
           this.resetForm();
           this.loadExpenses();
+          this.loadPendingTrips();
           this.showForm.set(false);
         },
         error: (err) => {
@@ -292,7 +332,8 @@ export class ExpenseTrackerComponent implements OnInit {
       date: today,
       vehicleId: '',
       remarks: '',
-      imageUrl: ''
+      imageUrl: '',
+      tripId: ''
     });
     this.selectedImageBase64 = null;
     this.selectedFileName.set(null);
